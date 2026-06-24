@@ -1,0 +1,367 @@
+@import "tailwindcss";
+@config "../tailwind.config.js";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/geist";
+
+@layer base {
+  .theme {
+    --font-heading: var(--font-sans);
+    --font-sans: "Geist Variable", sans-serif;
+  }
+
+  :root {
+    /* Neutral Colors (Slate Base) */
+    --background: oklch(0.985 0.002 247);
+    --foreground: oklch(0.14 0.003 285);
+    --card: oklch(1 0 0);
+    --card-foreground: var(--foreground);
+    --popover: oklch(1 0 0);
+    --popover-foreground: var(--foreground);
+    
+    /* Primary: Professional Deep Blue */
+    --primary: oklch(0.56 0.14 246);
+    --primary-foreground: oklch(0.985 0 0);
+    
+    /* Secondary: Soft Slate Blue */
+    --secondary: oklch(0.96 0.01 247);
+    --secondary-foreground: oklch(0.2 0.01 247);
+    
+    /* Muted */
+    --muted: oklch(0.97 0.01 247);
+    --muted-foreground: oklch(0.55 0.01 247);
+    
+    /* Accent */
+    --accent: oklch(0.97 0.01 247);
+    --accent-foreground: var(--primary);
+    
+    /* Success: Emerald */
+    --success: oklch(0.64 0.16 151);
+    --success-foreground: oklch(0.985 0 0);
+    
+    /* Warning: Amber */
+    --warning: oklch(0.69 0.15 83);
+    --warning-foreground: oklch(0.14 0.003 285);
+    
+    /* Danger: Rose */
+    --destructive: oklch(0.61 0.2 20);
+    --destructive-foreground: oklch(0.985 0 0);
+    
+    /* Borders & Inputs */
+    --border: oklch(0.93 0.01 247);
+    --input: oklch(0.94 0.01 247);
+    --ring: oklch(0.56 0.14 246);
+    
+    /* Charts - Professional Financial Palette */
+    --chart-1: oklch(0.56 0.14 246); /* Primary Blue */
+    --chart-2: oklch(0.64 0.16 151); /* Success Green */
+    --chart-3: oklch(0.69 0.15 83);  /* Warning Amber */
+    --chart-4: oklch(0.61 0.2 20);  /* Danger Red */
+    --chart-5: oklch(0.55 0.01 247);/* Slate */
+    
+    --radius: 0.75rem;
+    --shadow-soft: 0 4px 12px -2px oklch(0 0 0 / 0.06), 0 2px 8px -4px oklch(0 0 0 / 0.04);
+    
+    /* Sidebar */
+    --sidebar: oklch(0.99 0.002 247);
+    --sidebar-foreground: var(--foreground);
+    --sidebar-primary: var(--primary);
+    --sidebar-primary-foreground: oklch(0.985 0 0);
+    --sidebar-accent: oklch(0.97 0.01 247);
+    --sidebar-accent-foreground: var(--primary);
+    --sidebar-border: oklch(0.93 0.01 247);
+    --sidebar-ring: var(--ring);
+  }
+
+  .dark {
+    /* Neutral Colors for Dark Mode */
+    --background: oklch(0.12 0.01 285);
+    --foreground: oklch(0.98 0 0);
+    --card: oklch(0.15 0.01 285);
+    --card-foreground: var(--foreground);
+    --popover: oklch(0.15 0.01 285);
+    --popover-foreground: var(--foreground);
+    
+    /* Primary: Brighter Blue for Dark Mode */
+    --primary: oklch(0.72 0.14 246);
+    --primary-foreground: oklch(0.14 0.003 285);
+    
+    /* Secondary */
+    --secondary: oklch(0.2 0.01 285);
+    --secondary-foreground: oklch(0.985 0 0);
+    
+    /* Muted */
+    --muted: oklch(0.22 0.01 285);
+    --muted-foreground: oklch(0.68 0.01 285);
+    
+    /* Accent */
+    --accent: oklch(0.24 0.01 285);
+    --accent-foreground: var(--primary);
+    
+    /* Success */
+    --success: oklch(0.7 0.16 151);
+    --success-foreground: oklch(0.14 0.003 285);
+    
+    /* Warning */
+    --warning: oklch(0.75 0.15 83);
+    --warning-foreground: oklch(0.14 0.003 285);
+    
+    /* Danger */
+    --destructive: oklch(0.7 0.2 20);
+    --destructive-foreground: oklch(0.14 0.003 285);
+    
+    /* Borders & Inputs */
+    --border: oklch(0.28 0.01 285);
+    --input: oklch(0.22 0.01 285);
+    --ring: oklch(0.72 0.14 246);
+    
+    /* Charts */
+    --chart-1: oklch(0.72 0.14 246);
+    --chart-2: oklch(0.7 0.16 151);
+    --chart-3: oklch(0.75 0.15 83);
+    --chart-4: oklch(0.7 0.2 20);
+    --chart-5: oklch(0.68 0.01 285);
+    
+    /* Sidebar */
+    --sidebar: oklch(0.15 0.01 285);
+    --sidebar-foreground: var(--foreground);
+    --sidebar-primary: var(--primary);
+    --sidebar-primary-foreground: oklch(0.14 0.003 285);
+    --sidebar-accent: oklch(0.2 0.01 285);
+    --sidebar-accent-foreground: var(--primary);
+    --sidebar-border: oklch(0.28 0.01 285);
+    --sidebar-ring: var(--ring);
+  }
+
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    margin: 0;
+    font-feature-settings: "tnum" 1, "lnum" 1; /* Tabular numbers for financial data */
+  }
+
+  html {
+    @apply font-sans;
+  }
+}
+
+/* ============================================
+   Premium Design Utilities
+   ============================================ */
+@layer utilities {
+  /* Soft Card Elevation */
+  .card-soft {
+    box-shadow: var(--shadow-soft);
+    transition: box-shadow 0.25s ease, transform 0.2s ease;
+  }
+  .card-soft:hover {
+    box-shadow: 0 12px 28px -8px oklch(0 0 0 / 0.12), 0 4px 12px -6px oklch(0 0 0 / 0.08);
+    transform: translateY(-1px);
+  }
+  
+  /* Subtle Gradient Backgrounds */
+  .gradient-border {
+    background: linear-gradient(135deg, var(--card), oklch(0.99 0.002 247));
+  }
+  .dark .gradient-border {
+    background: linear-gradient(135deg, var(--card), oklch(0.18 0.01 285));
+  }
+  
+  /* Premium Scrollbars */
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 9999px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: var(--muted-foreground);
+  }
+  
+  /* Smooth Hover Lift */
+  .hover-lift {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .hover-lift:hover {
+    transform: translateY(-2px);
+  }
+  
+  /* Focus Ring Overlay */
+  .focus-ring {
+    transition: box-shadow 0.2s ease, outline 0.2s ease;
+  }
+  .focus-ring:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px oklch(0.56 0.14 246 / 0.25);
+  }
+  
+  /* Premium Button Hover */
+  .btn-premium {
+    transition: all 0.2s ease;
+  }
+  .btn-premium:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px -2px var(--primary);
+  }
+  .btn-premium:active {
+    transform: translateY(0);
+  }
+}
+
+/* ============================================
+   RTL (Right-to-Left) Support for Arabic
+   ============================================ */
+
+/* RTL Font Stack - Arabic optimized */
+[dir="rtl"] body {
+  font-family: "Segoe UI", "Arabic UI Text", Tahoma, Arial, sans-serif;
+}
+
+/* Text Alignment */
+[dir="rtl"] .text-left {
+  text-align: right;
+}
+
+[dir="rtl"] .text-right {
+  text-align: left;
+}
+
+/* Logical Properties - Margins */
+[dir="rtl"] .ml-auto {
+  margin-inline-start: auto;
+  margin-left: 0;
+}
+
+[dir="rtl"] .mr-auto {
+  margin-inline-end: auto;
+  margin-right: 0;
+}
+
+/* Logical Properties - Padding */
+[dir="rtl"] .pl-2 { padding-inline-start: 0.5rem; padding-left: 0; }
+[dir="rtl"] .pr-2 { padding-inline-end: 0.5rem; padding-right: 0; }
+[dir="rtl"] .pl-3 { padding-inline-start: 0.75rem; padding-left: 0; }
+[dir="rtl"] .pr-3 { padding-inline-end: 0.75rem; padding-right: 0; }
+[dir="rtl"] .pl-4 { padding-inline-start: 1rem; padding-left: 0; }
+[dir="rtl"] .pr-4 { padding-inline-end: 1rem; padding-right: 0; }
+[dir="rtl"] .pl-6 { padding-inline-start: 1.5rem; padding-left: 0; }
+[dir="rtl"] .pr-6 { padding-inline-end: 1.5rem; padding-right: 0; }
+[dir="rtl"] .pl-8 { padding-inline-start: 2rem; padding-left: 0; }
+[dir="rtl"] .pr-8 { padding-inline-end: 2rem; padding-right: 0; }
+
+/* Flex Direction */
+[dir="rtl"] .flex-row {
+  flex-direction: row-reverse;
+}
+
+/* Border Radius RTL */
+[dir="rtl"] .rounded-l { 
+  border-start-start-radius: 0; 
+  border-end-start-radius: 0;
+  border-start-end-radius: var(--radius);
+  border-end-end-radius: var(--radius);
+}
+
+[dir="rtl"] .rounded-r { 
+  border-start-end-radius: 0;
+  border-end-end-radius: 0;
+  border-start-start-radius: var(--radius);
+  border-end-start-radius: var(--radius);
+}
+
+/* Transform RTL - Icons and Arrows */
+[dir="rtl"] .rtl-flip {
+  transform: scaleX(-1);
+}
+
+/* Sidebar RTL Adjustments */
+[dir="rtl"] .sidebar {
+  left: auto;
+  right: 0;
+}
+
+[dir="rtl"] .sidebar-inset {
+  margin-left: 0;
+  margin-right: var(--sidebar-width);
+}
+
+/* Dropdown Menu RTL */
+[dir="rtl"] [role="menu"] {
+  text-align: right;
+}
+
+/* Form Inputs RTL */
+[dir="rtl"] input[type="text"],
+[dir="rtl"] input[type="email"],
+[dir="rtl"] input[type="password"],
+[dir="rtl"] input[type="number"],
+[dir="rtl"] textarea,
+[dir="rtl"] select {
+  text-align: right;
+}
+
+/* Badge and Tag RTL */
+[dir="rtl"] .badge {
+  padding-inline-start: 0.625rem;
+  padding-inline-end: 0.625rem;
+}
+
+/* Tooltip RTL */
+[dir="rtl"] [role="tooltip"] {
+  text-align: right;
+}
+
+/* Table RTL */
+[dir="rtl"] table {
+  direction: rtl;
+}
+
+[dir="rtl"] th {
+  text-align: right;
+}
+
+[dir="rtl"] td {
+  text-align: right;
+}
+
+/* Modal and Dialog RTL */
+[dir="rtl"] [role="dialog"] {
+  text-align: right;
+}
+
+/* Card Content RTL */
+[dir="rtl"] .card {
+  text-align: right;
+}
+
+/* Navigation RTL */
+[dir="rtl"] nav a {
+  text-align: right;
+}
+
+/* Recharts RTL - flip axis labels */
+[dir="rtl"] .recharts-cartesian-axis-tick text {
+  direction: rtl;
+  text-anchor: end;
+}
+
+[dir="rtl"] .recharts-legend-wrapper {
+  direction: rtl;
+}
+
+/* Smooth transitions for direction changes */
+html[dir] * {
+  transition: margin 0.2s ease, padding 0.2s ease;
+}

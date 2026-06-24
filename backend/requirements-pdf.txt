@@ -1,0 +1,3 @@
+# Optional: PDF treasury upload (install with: pip install -r requirements-pdf.txt)
+pdfplumber>=0.11.0
+rapidfuzz>=2.0.0
