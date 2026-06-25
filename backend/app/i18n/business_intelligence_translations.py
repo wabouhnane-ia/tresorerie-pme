@@ -10,48 +10,144 @@ from app.core.locale import DEFAULT_LOCALE, normalize_locale
 _TEXT = {
     "fr": {
         "health": {
-            "excellent": "Excellente sante financiere",
-            "healthy": "Bonne sante financiere",
+            "excellent": "Excellente santé financière",
+            "healthy": "Bonne santé financière",
             "vigilance": "Vigilance",
             "fragile": "Situation fragile",
             "critical": "Situation critique",
         },
         "resilience": {
-            "excellent": "Tres forte",
+            "excellent": "Très forte",
             "healthy": "Forte",
-            "vigilance": "Moderee",
+            "vigilance": "Modérée",
             "fragile": "Faible",
             "critical": "Critique",
         },
         "severity": {
             "Critical": "Critique",
-            "High": "Elevee",
+            "High": "Élevée",
             "Medium": "Moyenne",
             "Low": "Faible",
         },
-        "probability": {"high": "Elevee", "medium": "Moyenne", "low": "Faible"},
-        "urgency": {"now": "Immediat", "30": "Sous 30 jours", "month": "Suivi mensuel"},
-        "health_explanation": "Autonomie estimee : {months} mois. Niveau de risque global : {risk_level}.",
-        "resilience_interpretation_high": "Capacite elevee a absorber un choc de tresorerie.",
-        "resilience_interpretation_mid": "Situation gerable avec un pilotage regulier des flux.",
-        "resilience_interpretation_low": "Marge de securite limitee : des actions de direction sont a prevoir.",
-        "runway": "La tresorerie couvre environ {months} mois d'activite au rythme recent.",
-        "summary": "Tresorerie avec sante {health}/100, resilience {resilience}/100 et autonomie estimee a {months} mois. Risque principal : {risk}. Decision prioritaire : {decision}.",
-        "financial": "Sur les 30 derniers jours : encaissements {inflows}, depenses {outflows}, flux net {net}.",
-        "cash": "Autonomie estimee {months} mois. Resilience : {label} ({score}/100).",
-        "outlook": "Sur 30 jours, surveiller le solde minimum attendu et les principaux encaissements. Niveau de risque global : {risk_level}.",
-        "main_risk_title": "Risque de tresorerie",
-        "main_risk_desc": "La direction doit maintenir une visibilite rapprochee sur les flux et les engagements critiques.",
-        "opportunity_title": "Optimiser la tresorerie",
-        "opportunity_desc": "Structurer une reserve minimale et utiliser le surplus sans fragiliser les operations.",
-        "decision_action": "Tenir une revue tresorerie hebdomadaire",
-        "decision_rationale": "Le pilotage regulier securise la position de tresorerie et accelere la reaction aux tensions.",
-        "decision_outcome": "Meilleure visibilite sur les encaissements, les depenses et les priorites de paiement.",
+        "probability": {"high": "Élevée", "medium": "Moyenne", "low": "Faible"},
+        "urgency": {"now": "Immédiat", "30": "Sous 30 jours", "month": "Suivi mensuel"},
+        "health_explanation": "Autonomie estimée : {months} mois. Niveau de risque global : {risk_level}.",
+        "resilience_interpretation_high": "Capacité élevée à absorber un choc de trésorerie.",
+        "resilience_interpretation_mid": "Situation gérable avec un pilotage régulier des flux.",
+        "resilience_interpretation_low": "Marge de sécurité limitée : des actions de direction sont à prévoir.",
+        "runway": "La trésorerie couvre environ {months} mois d'activité au rythme récent.",
+        "summary": "Trésorerie à {balance} — santé {health}/100, résilience {resilience}/100, autonomie estimée {runway_months} mois. Risque principal : {risk_title}. Décision prioritaire : {decision_action}.",
+        "financial": "Sur les 30 derniers jours : encaissements {inflows}, dépenses {outflows}, flux net {net}. Évolution de la trésorerie : {trend}.",
+        "cash": "Autonomie estimée {months} mois. Résilience : {label} ({score}/100).",
+        "outlook": "Sur 30 jours : point bas attendu autour de {min_balance}, tendance {trend}. Niveau de risque global : {risk_level}.",
+        "main_risk_title": "Risque de trésorerie",
+        "main_risk_desc": "La direction doit maintenir une visibilité rapprochée sur les flux et les engagements critiques.",
+        "opportunity_title": "Optimiser la trésorerie",
+        "opportunity_desc": "Structurer une réserve minimale et utiliser le surplus sans fragiliser les opérations.",
+        "decision_action": "Tenir une revue trésorerie hebdomadaire",
+        "decision_rationale": "Le pilotage régulier sécurise la position de trésorerie et accélère la réaction aux tensions.",
+        "decision_outcome": "Meilleure visibilité sur les encaissements, les dépenses et les priorités de paiement.",
         "deadline": "Cette semaine",
-        "alert_title": "Pilotage regulier recommande",
-        "alert_desc": "Aucun signal critique immediat ; maintenir la visibilite hebdomadaire.",
-        "alert_impact": "Preserver la capacite de reaction de la direction.",
-        "alert_action": "Tenir une revue tresorerie hebdomadaire avec les principaux flux entrants et sortants.",
+        "alert_title": "Pilotage régulier recommandé",
+        "alert_desc": "Aucun signal critique immédiat ; maintenir la visibilité hebdomadaire.",
+        "alert_impact": "Préserver la capacité de réaction de la direction.",
+        "alert_action": "Tenir une revue trésorerie hebdomadaire avec les principaux flux entrants et sortants.",
+
+        # Cash Runway
+        "cash_runway": {
+            "burn_rate_interpretation": "Au rythme actuel de consommation ({avg_net} par jour), la trésorerie couvre environ {months} mois d'activité.",
+            "expense_coverage_interpretation": "La trésorerie actuelle ({balance}) couvre environ {months} mois de dépenses au rythme des 30 derniers jours (encaissements récents : {monthly_inflows}).",
+            "stable_buffer_interpretation": "Trésorerie disponible de {balance} sans sorties significatives enregistrées sur la période récente.",
+            "insufficient_data_interpretation": "Données insuffisantes pour estimer l'autonomie de trésorerie.",
+            "declining_trend_adjustment": " Ajustement prudent : la trésorerie recule sur la période observée.",
+            "forecast_decline_adjustment": " La trajectoire récente suggère une marge de sécurité à resserrer.",
+        },
+
+        # Financial Health Drivers
+        "health_drivers": {
+            "runway": "Autonomie estimée : {months} mois.",
+            "positive_cashflow": "Flux net récent positif.",
+            "negative_cashflow": "Flux net récent négatif : {cashflow} par jour.",
+            "risk_level": "Niveau de risque global : {risk_level}.",
+        },
+
+        # Resilience Drivers
+        "resilience_drivers": {
+            "runway": "Horizon de trésorerie estimé : {months} mois.",
+            "positive_cashflow": "Les encaissements couvrent le rythme de dépenses récent.",
+            "negative_cashflow": "Consommation nette de {cashflow} par jour.",
+            "improving_trend": "La trésorerie progresse sur la période observée.",
+            "declining_trend": "La trésorerie recule : vigilance sur la marge de sécurité.",
+            "outflow_spike": "Dépenses en hausse de {pct}% sur 30 jours.",
+            "inflow_drop": "Encaissements en baisse de {pct}% sur 30 jours.",
+        },
+
+        # Alerts
+        "alerts": {
+            "critical_liquidity_title": "Liquidité critique à traiter aujourd'hui",
+            "critical_liquidity_desc": "Autonomie estimée à {days} jours seulement ({interpretation})",
+            "critical_liquidity_impact": "Risque de retard de paiement sur environ {amount}.",
+            "critical_liquidity_action": "Bloquer les sorties non essentielles, activer les relances clients et sécuriser une ligne de trésorerie.",
+            "short_margin_title": "Marge de trésorerie courte",
+            "short_margin_impact": "Peu de capacité à absorber un retard client ou une dépense imprévue.",
+            "short_margin_action": "Établir un plan de trésorerie sur 30 jours avec priorités de paiement.",
+            "deterioration_title": "La trésorerie se dégrade",
+            "deterioration_desc": "Consommation nette moyenne de {avg_net} par jour sur 30 jours.",
+            "deterioration_impact": "Érosion estimée d'environ {monthly_drain} par mois si rien ne change.",
+            "deterioration_action": "Réduire les charges variables et accélérer les encaissements confirmés.",
+            "spending_spike_title": "Hausse anormale des dépenses",
+            "spending_spike_desc": "Les sorties ont augmenté de {pct}% vs la période précédente.",
+            "spending_spike_impact": "Surcoût estimé d'environ {amount} sur 30 jours.",
+            "spending_spike_action": "Valider chaque paiement supérieur au seuil habituel et reporter les dépenses non critiques.",
+            "spending_accel_title": "Dépenses en accélération",
+            "spending_accel_desc": "Sorties en hausse de {pct}% sur 30 jours.",
+            "spending_accel_impact": "Pression sur la marge de trésorerie disponible.",
+            "spending_accel_action": "Revoir les postes variables et les échéances fournisseurs.",
+            "inflow_drop_title": "Encaissements en forte baisse",
+            "inflow_drop_desc": "Encaissements récents en recul de {pct}% — dépendance accrue à quelques entrées de cash.",
+            "inflow_drop_impact": "Manque à gagner de trésorerie d'environ {amount} vs le mois précédent.",
+            "inflow_drop_action": "Identifier les clients ou contrats en retard et sécuriser les factures à forte valeur.",
+            "inflow_slow_title": "Ralentissement des encaissements",
+            "inflow_slow_desc": "Encaissements en baisse de {pct}% sur 30 jours.",
+            "inflow_slow_impact": "Risque de tension sur le cycle de trésorerie.",
+            "inflow_slow_action": "Relancer les créances ouvertes et confirmer les dates de paiement clients.",
+            "forecast_low_title": "Point bas de trésorerie à venir",
+            "forecast_low_desc": "Le niveau de trésorerie pourrait descendre vers {min_balance}.",
+            "forecast_low_impact": "Écart potentiel d'environ {amount} par rapport au solde actuel.",
+            "forecast_low_action": "Planifier les encaissements et reports de paiement avant la semaine de tension.",
+            "opportunity_title": "Opportunité : optimiser l'excédent de trésorerie",
+            "opportunity_desc": "Trésorerie de {balance} avec génération de cash positive.",
+            "opportunity_impact": "Améliorer le rendement du cash excédentaire sans fragiliser les opérations.",
+            "opportunity_action": "Définir une réserve opérationnelle minimale et allouer le surplus (remboursement dette, placement court terme).",
+        },
+
+        # Risks
+        "risks": {
+            "default_title": "Risque de trésorerie",
+            "high_probability": "Élevée",
+            "medium_probability": "Moyenne",
+            "immediate_urgency": "Immédiat",
+        },
+
+        # Decisions
+        "decisions": {
+            "default_action": "Instaurer une revue trésorerie hebdomadaire",
+            "default_benefit": "Détecter plus tôt les tensions et prioriser les encaissements.",
+            "default_justification": "Autonomie estimée à {months} mois — le pilotage régulier sécurise cette position.",
+            "default_horizon": "Prochains 30 jours",
+        },
+
+        # Briefing
+        "briefing": {
+            "surplus_opportunity_title": "Renforcer la valeur de l'excédent de trésorerie",
+            "surplus_opportunity_desc": "Avec {balance} en caisse et des encaissements qui couvrent le rythme de dépenses, la direction peut structurer une réserve minimale et utiliser le surplus.",
+            "surplus_opportunity_benefit": "Améliorer le rendement du cash sans fragiliser les opérations.",
+            "deficit_opportunity_title": "Accélérer les encaissements confirmés",
+            "deficit_opportunity_desc": "Prioriser les relances sur les créances ouvertes pour compenser la consommation de {avg_net} par jour.",
+            "deficit_opportunity_benefit": "Réduire la pression sur la trésorerie dans les 30 prochains jours.",
+            "default_decision_action": "Piloter la trésorerie en comité de direction",
+            "default_decision_horizon": "30 jours",
+        },
     },
     "en": {
         "health": {
@@ -81,73 +177,294 @@ _TEXT = {
         "resilience_interpretation_mid": "Manageable position with regular cash-flow steering.",
         "resilience_interpretation_low": "Limited safety margin: management actions should be planned.",
         "runway": "Treasury covers about {months} months of activity at the recent pace.",
-        "summary": "Treasury health is {health}/100, resilience is {resilience}/100 and estimated runway is {months} months. Main risk: {risk}. Priority decision: {decision}.",
-        "financial": "Over the last 30 days: inflows {inflows}, outflows {outflows}, net flow {net}.",
-        "cash": "Estimated runway is {months} months. Resilience: {label} ({score}/100).",
-        "outlook": "Over 30 days, monitor the expected low balance and the main incoming cash flows. Overall risk level: {risk_level}.",
+        "summary": "Treasury balance {balance} — health {health}/100, resilience {resilience}/100, estimated runway {runway_months} months. Main risk: {risk_title}. Priority decision: {decision_action}.",
+        "financial": "Over the last 30 days: inflows {inflows}, outflows {outflows}, net flow {net}. Treasury trend: {trend}.",
+        "cash": "Estimated runway {months} months. Resilience: {label} ({score}/100).",
+        "outlook": "Over 30 days: expected low balance around {min_balance}, trend {trend}. Overall risk level: {risk_level}.",
         "main_risk_title": "Treasury risk",
         "main_risk_desc": "Management should keep close visibility over cash flows and critical commitments.",
         "opportunity_title": "Optimize treasury",
         "opportunity_desc": "Structure a minimum reserve and use surplus cash without weakening operations.",
         "decision_action": "Run a weekly treasury review",
-        "decision_rationale": "Regular steering protects the treasury position and speeds up the response to pressure.",
+        "decision_rationale": "Regular steering protects the treasury position and speeds up response to pressure.",
         "decision_outcome": "Better visibility over collections, spending and payment priorities.",
         "deadline": "This week",
         "alert_title": "Regular steering recommended",
         "alert_desc": "No immediate critical signal; keep weekly visibility.",
         "alert_impact": "Preserve management's ability to react.",
         "alert_action": "Run a weekly treasury review with the main inflows and outflows.",
+
+        # Cash Runway
+        "cash_runway": {
+            "burn_rate_interpretation": "At the current burn rate ({avg_net} per day), treasury covers about {months} months of activity.",
+            "expense_coverage_interpretation": "Current treasury ({balance}) covers about {months} months of expenses at the last 30 days' pace (recent inflows: {monthly_inflows}).",
+            "stable_buffer_interpretation": "Available treasury of {balance} with no significant outflows recorded in the recent period.",
+            "insufficient_data_interpretation": "Insufficient data to estimate treasury runway.",
+            "declining_trend_adjustment": " Prudent adjustment: treasury is declining over the observed period.",
+            "forecast_decline_adjustment": " Recent trajectory suggests tightening the safety margin.",
+        },
+
+        # Financial Health Drivers
+        "health_drivers": {
+            "runway": "Estimated runway: {months} months.",
+            "positive_cashflow": "Recent net cash flow positive.",
+            "negative_cashflow": "Recent net cash flow negative: {cashflow} per day.",
+            "risk_level": "Overall risk level: {risk_level}.",
+        },
+
+        # Resilience Drivers
+        "resilience_drivers": {
+            "runway": "Estimated treasury horizon: {months} months.",
+            "positive_cashflow": "Collections cover the recent spending pace.",
+            "negative_cashflow": "Net consumption of {cashflow} per day.",
+            "improving_trend": "Treasury is improving over the observed period.",
+            "declining_trend": "Treasury is declining: vigilance on the safety margin.",
+            "outflow_spike": "Expenses up {pct}% over 30 days.",
+            "inflow_drop": "Collections down {pct}% over 30 days.",
+        },
+
+        # Alerts
+        "alerts": {
+            "critical_liquidity_title": "Critical liquidity to address today",
+            "critical_liquidity_desc": "Estimated runway only {days} days ({interpretation})",
+            "critical_liquidity_impact": "Risk of late payments on approximately {amount}.",
+            "critical_liquidity_action": "Block non-essential outflows, activate customer follow-ups and secure a credit line.",
+            "short_margin_title": "Short treasury margin",
+            "short_margin_impact": "Little capacity to absorb a late customer payment or unexpected expense.",
+            "short_margin_action": "Establish a 30-day treasury plan with payment priorities.",
+            "deterioration_title": "Treasury is deteriorating",
+            "deterioration_desc": "Average net consumption of {avg_net} per day over 30 days.",
+            "deterioration_impact": "Estimated erosion of approximately {monthly_drain} per month if nothing changes.",
+            "deterioration_action": "Reduce variable costs and accelerate confirmed collections.",
+            "spending_spike_title": "Abnormal spending increase",
+            "spending_spike_desc": "Outflows increased by {pct}% vs the previous period.",
+            "spending_spike_impact": "Estimated additional cost of approximately {amount} over 30 days.",
+            "spending_spike_action": "Validate each payment above the usual threshold and postpone non-critical expenses.",
+            "spending_accel_title": "Accelerating expenses",
+            "spending_accel_desc": "Outflows up {pct}% over 30 days.",
+            "spending_accel_impact": "Pressure on available treasury margin.",
+            "spending_accel_action": "Review variable items and supplier deadlines.",
+            "inflow_drop_title": "Sharp decline in collections",
+            "inflow_drop_desc": "Recent collections down {pct}% — increased dependence on a few cash inflows.",
+            "inflow_drop_impact": "Treasury shortfall of approximately {amount} vs the previous month.",
+            "inflow_drop_action": "Identify late customers or contracts and secure high-value invoices.",
+            "inflow_slow_title": "Slowing collections",
+            "inflow_slow_desc": "Collections down {pct}% over 30 days.",
+            "inflow_slow_impact": "Risk of pressure on the treasury cycle.",
+            "inflow_slow_action": "Follow up on open receivables and confirm customer payment dates.",
+            "forecast_low_title": "Upcoming treasury low point",
+            "forecast_low_desc": "Treasury level could drop to around {min_balance}.",
+            "forecast_low_impact": "Potential gap of approximately {amount} from current balance.",
+            "forecast_low_action": "Plan collections and payment deferrals before the stress week.",
+            "opportunity_title": "Opportunity: optimize treasury surplus",
+            "opportunity_desc": "Treasury of {balance} with positive cash generation.",
+            "opportunity_impact": "Improve surplus cash yield without weakening operations.",
+            "opportunity_action": "Define a minimum operating reserve and allocate the surplus (debt repayment, short-term investment).",
+        },
+
+        # Risks
+        "risks": {
+            "default_title": "Treasury risk",
+            "high_probability": "High",
+            "medium_probability": "Medium",
+            "immediate_urgency": "Immediate",
+        },
+
+        # Decisions
+        "decisions": {
+            "default_action": "Establish a weekly treasury review",
+            "default_benefit": "Detect stress earlier and prioritize collections.",
+            "default_justification": "Estimated runway {months} months — regular steering secures this position.",
+            "default_horizon": "Next 30 days",
+        },
+
+        # Briefing
+        "briefing": {
+            "surplus_opportunity_title": "Enhance the value of treasury surplus",
+            "surplus_opportunity_desc": "With {balance} in cash and collections covering spending pace, management can structure a minimum reserve and use the surplus.",
+            "surplus_opportunity_benefit": "Improve cash yield without weakening operations.",
+            "deficit_opportunity_title": "Accelerate confirmed collections",
+            "deficit_opportunity_desc": "Prioritize follow-ups on open receivables to offset the {avg_net} daily burn.",
+            "deficit_opportunity_benefit": "Reduce treasury pressure over the next 30 days.",
+            "default_decision_action": "Steer treasury in management committee",
+            "default_decision_horizon": "30 days",
+        },
     },
     "ar": {
         "health": {
-            "excellent": "\u0635\u062d\u0629 \u0645\u0627\u0644\u064a\u0629 \u0645\u0645\u062a\u0627\u0632\u0629",
-            "healthy": "\u0648\u0636\u0639 \u0645\u0627\u0644\u064a \u062c\u064a\u062f",
-            "vigilance": "\u064a\u062a\u0637\u0644\u0628 \u0627\u0644\u0645\u062a\u0627\u0628\u0639\u0629",
-            "fragile": "\u0648\u0636\u0639 \u0647\u0634",
-            "critical": "\u0648\u0636\u0639 \u062d\u0631\u062c",
+            "excellent": "صحة مالية ممتازة",
+            "healthy": "وضع مالي جيد",
+            "vigilance": "يتطلب المتابعة",
+            "fragile": "وضع هش",
+            "critical": "وضع حرج",
         },
         "resilience": {
-            "excellent": "\u0642\u0648\u064a\u0629 \u062c\u062f\u0627",
-            "healthy": "\u0642\u0648\u064a\u0629",
-            "vigilance": "\u0645\u062a\u0648\u0633\u0637\u0629",
-            "fragile": "\u0636\u0639\u064a\u0641\u0629",
-            "critical": "\u062d\u0631\u062c\u0629",
+            "excellent": "قوية جداً",
+            "healthy": "قوية",
+            "vigilance": "متوسطة",
+            "fragile": "ضعيفة",
+            "critical": "حرجة",
         },
         "severity": {
-            "Critical": "\u062d\u0631\u062c",
-            "High": "\u0645\u0631\u062a\u0641\u0639",
-            "Medium": "\u0645\u062a\u0648\u0633\u0637",
-            "Low": "\u0645\u0646\u062e\u0641\u0636",
+            "Critical": "حرج",
+            "High": "مرتفع",
+            "Medium": "متوسط",
+            "Low": "منخفض",
         },
-        "probability": {"high": "\u0645\u0631\u062a\u0641\u0639\u0629", "medium": "\u0645\u062a\u0648\u0633\u0637\u0629", "low": "\u0645\u0646\u062e\u0641\u0636\u0629"},
-        "urgency": {"now": "\u0641\u0648\u0631\u064a", "30": "\u062e\u0644\u0627\u0644 30 \u064a\u0648\u0645\u0627", "month": "\u0645\u062a\u0627\u0628\u0639\u0629 \u0634\u0647\u0631\u064a\u0629"},
-        "health_explanation": "\u0627\u0644\u0623\u0641\u0642 \u0627\u0644\u0645\u0642\u062f\u0631: {months} \u0634\u0647\u0631. \u0645\u0633\u062a\u0648\u0649 \u0627\u0644\u0645\u062e\u0627\u0637\u0631: {risk_level}.",
-        "resilience_interpretation_high": "\u0642\u062f\u0631\u0629 \u0642\u0648\u064a\u0629 \u0639\u0644\u0649 \u0627\u0645\u062a\u0635\u0627\u0635 \u0635\u062f\u0645\u0629 \u0641\u064a \u0627\u0644\u062e\u0632\u064a\u0646\u0629.",
-        "resilience_interpretation_mid": "\u0648\u0636\u0639 \u0642\u0627\u0628\u0644 \u0644\u0644\u062a\u0633\u064a\u064a\u0631 \u0645\u0639 \u0645\u062a\u0627\u0628\u0639\u0629 \u0645\u0646\u062a\u0638\u0645\u0629 \u0644\u0644\u062a\u062f\u0641\u0642\u0627\u062a.",
-        "resilience_interpretation_low": "\u0647\u0627\u0645\u0634 \u0623\u0645\u0627\u0646 \u0645\u062d\u062f\u0648\u062f: \u064a\u062c\u0628 \u062a\u062e\u0637\u064a\u0637 \u0625\u062c\u0631\u0627\u0621\u0627\u062a \u0627\u0644\u0625\u062f\u0627\u0631\u0629.",
-        "runway": "\u062a\u063a\u0637\u064a \u0627\u0644\u062e\u0632\u064a\u0646\u0629 \u062d\u0648\u0627\u0644\u064a {months} \u0634\u0647\u0631 \u0645\u0646 \u0627\u0644\u0646\u0634\u0627\u0637 \u0628\u0627\u0644\u0648\u062a\u064a\u0631\u0629 \u0627\u0644\u062d\u0627\u0644\u064a\u0629.",
-        "summary": "\u0635\u062d\u0629 \u0627\u0644\u062e\u0632\u064a\u0646\u0629 {health}/100\u060c \u0648\u0627\u0644\u0645\u0631\u0648\u0646\u0629 {resilience}/100\u060c \u0648\u0627\u0644\u0623\u0641\u0642 \u0627\u0644\u0645\u0642\u062f\u0631 {months} \u0634\u0647\u0631. \u0627\u0644\u062e\u0637\u0631 \u0627\u0644\u0631\u0626\u064a\u0633\u064a: {risk}. \u0627\u0644\u0642\u0631\u0627\u0631 \u0627\u0644\u0623\u0648\u0644\u0648\u064a: {decision}.",
-        "financial": "\u062e\u0644\u0627\u0644 \u0622\u062e\u0631 30 \u064a\u0648\u0645\u0627: \u0627\u0644\u062a\u062d\u0635\u064a\u0644\u0627\u062a {inflows}\u060c \u0627\u0644\u0645\u0635\u0627\u0631\u064a\u0641 {outflows}\u060c \u0635\u0627\u0641\u064a \u0627\u0644\u062a\u062f\u0641\u0642 {net}.",
-        "cash": "\u0627\u0644\u0623\u0641\u0642 \u0627\u0644\u0645\u0642\u062f\u0631 {months} \u0634\u0647\u0631. \u0627\u0644\u0645\u0631\u0648\u0646\u0629: {label} ({score}/100).",
-        "outlook": "\u062e\u0644\u0627\u0644 30 \u064a\u0648\u0645\u0627\u060c \u0631\u0627\u0642\u0628 \u0623\u062f\u0646\u0649 \u0631\u0635\u064a\u062f \u0645\u062a\u0648\u0642\u0639 \u0648\u0623\u0647\u0645 \u0627\u0644\u062a\u062d\u0635\u064a\u0644\u0627\u062a. \u0645\u0633\u062a\u0648\u0649 \u0627\u0644\u0645\u062e\u0627\u0637\u0631: {risk_level}.",
-        "main_risk_title": "\u0645\u062e\u0627\u0637\u0631 \u0627\u0644\u062e\u0632\u064a\u0646\u0629",
-        "main_risk_desc": "\u064a\u062c\u0628 \u0639\u0644\u0649 \u0627\u0644\u0625\u062f\u0627\u0631\u0629 \u0627\u0644\u062d\u0641\u0627\u0638 \u0639\u0644\u0649 \u0631\u0624\u064a\u0629 \u0642\u0631\u064a\u0628\u0629 \u0644\u0644\u062a\u062f\u0641\u0642\u0627\u062a \u0648\u0627\u0644\u0627\u0644\u062a\u0632\u0627\u0645\u0627\u062a \u0627\u0644\u062d\u0631\u062c\u0629.",
-        "opportunity_title": "\u062a\u062d\u0633\u064a\u0646 \u0627\u0644\u062e\u0632\u064a\u0646\u0629",
-        "opportunity_desc": "\u0647\u064a\u0643\u0644\u0629 \u0627\u062d\u062a\u064a\u0627\u0637\u064a \u0623\u062f\u0646\u0649 \u0648\u0627\u0633\u062a\u062e\u062f\u0627\u0645 \u0627\u0644\u0641\u0627\u0626\u0636 \u062f\u0648\u0646 \u0625\u0636\u0639\u0627\u0641 \u0627\u0644\u0639\u0645\u0644\u064a\u0627\u062a.",
-        "decision_action": "\u0625\u062c\u0631\u0627\u0621 \u0645\u0631\u0627\u062c\u0639\u0629 \u0623\u0633\u0628\u0648\u0639\u064a\u0629 \u0644\u0644\u062e\u0632\u064a\u0646\u0629",
-        "decision_rationale": "\u0627\u0644\u062a\u0633\u064a\u064a\u0631 \u0627\u0644\u0645\u0646\u062a\u0638\u0645 \u064a\u062d\u0645\u064a \u0648\u0636\u0639 \u0627\u0644\u062e\u0632\u064a\u0646\u0629 \u0648\u064a\u0633\u0631\u0639 \u0627\u0644\u062a\u0641\u0627\u0639\u0644 \u0645\u0639 \u0627\u0644\u0636\u063a\u0637.",
-        "decision_outcome": "\u0631\u0624\u064a\u0629 \u0623\u0641\u0636\u0644 \u0644\u0644\u062a\u062d\u0635\u064a\u0644\u0627\u062a \u0648\u0627\u0644\u0645\u0635\u0627\u0631\u064a\u0641 \u0648\u0623\u0648\u0644\u0648\u064a\u0627\u062a \u0627\u0644\u062f\u0641\u0639.",
-        "deadline": "\u0647\u0630\u0627 \u0627\u0644\u0623\u0633\u0628\u0648\u0639",
-        "alert_title": "\u064a\u0648\u0635\u0649 \u0628\u062a\u0633\u064a\u064a\u0631 \u0645\u0646\u062a\u0638\u0645",
-        "alert_desc": "\u0644\u0627 \u062a\u0648\u062c\u062f \u0625\u0634\u0627\u0631\u0629 \u062d\u0631\u062c\u0629 \u0641\u0648\u0631\u064a\u0629\u061b \u062d\u0627\u0641\u0638 \u0639\u0644\u0649 \u0631\u0624\u064a\u0629 \u0623\u0633\u0628\u0648\u0639\u064a\u0629.",
-        "alert_impact": "\u0627\u0644\u062d\u0641\u0627\u0638 \u0639\u0644\u0649 \u0642\u062f\u0631\u0629 \u0627\u0644\u0625\u062f\u0627\u0631\u0629 \u0639\u0644\u0649 \u0627\u0644\u062a\u0641\u0627\u0639\u0644.",
-        "alert_action": "\u0625\u062c\u0631\u0627\u0621 \u0645\u0631\u0627\u062c\u0639\u0629 \u0623\u0633\u0628\u0648\u0639\u064a\u0629 \u0644\u0644\u062e\u0632\u064a\u0646\u0629 \u0645\u0639 \u0623\u0647\u0645 \u0627\u0644\u062a\u062f\u0641\u0642\u0627\u062a \u0627\u0644\u062f\u0627\u062e\u0644\u0629 \u0648\u0627\u0644\u062e\u0627\u0631\u062c\u0629.",
+        "probability": {"high": "مرتفعة", "medium": "متوسطة", "low": "منخفضة"},
+        "urgency": {"now": "فوري", "30": "خلال 30 يوماً", "month": "متابعة شهرية"},
+        "health_explanation": "الأفق المقدر: {months} شهر. مستوى المخاطر: {risk_level}.",
+        "resilience_interpretation_high": "قدرة قوية على امتصاص صدمة في الخزينة.",
+        "resilience_interpretation_mid": "وضع قابل للإدارة مع متابعة منتظمة للتدفقات.",
+        "resilience_interpretation_low": "هامش أمان محدود: يجب تخطيط إجراءات الإدارة.",
+        "runway": "تغطي الخزينة حوالي {months} شهر من النشاط بالإيقاع الحالي.",
+        "summary": "رصيد الخزينة {balance} — الصحة {health}/100، المرونة {resilience}/100، الأفق المقدر {runway_months} شهر. الخطر الرئيسي: {risk_title}. القرار ذو الأولوية: {decision_action}.",
+        "financial": "خلال آخر 30 يوماً: التحصيلات {inflows}، المصروفات {outflows}، التدفق الصافي {net}. اتجاه الخزينة: {trend}.",
+        "cash": "الأفق المقدر {months} شهر. المرونة: {label} ({score}/100).",
+        "outlook": "خلال 30 يوماً: أقل رصيد متوقع حوالي {min_balance}، الاتجاه {trend}. مستوى المخاطر: {risk_level}.",
+        "main_risk_title": "مخاطر الخزينة",
+        "main_risk_desc": "يجب على الإدارة الحفاظ على رؤية واضحة للتدفقات والالتزامات الحرجة.",
+        "opportunity_title": "تحسين الخزينة",
+        "opportunity_desc": "هيكلة احتياطي أدنى واستخدام الفائض دون إضعاف العمليات.",
+        "decision_action": "إجراء مراجعة أسبوعية للخزينة",
+        "decision_rationale": "الإدارة المنتظمة تحمي وضع الخزينة وتسرع الاستجابة للضغوط.",
+        "decision_outcome": "رؤية أفضل للتحصيلات والمصروفات وأولويات الدفع.",
+        "deadline": "هذا الأسبوع",
+        "alert_title": "ينصح بإدارة منتظمة",
+        "alert_desc": "لا توجد إشارة حرجة فورية؛ الحفاظ على رؤية أسبوعية.",
+        "alert_impact": "الحفاظ على قدرة الإدارة على الاستجابة.",
+        "alert_action": "إجراء مراجعة أسبوعية للخزينة مع أهم التدفقات الداخلة والخارجة.",
+
+        # Cash Runway
+        "cash_runway": {
+            "burn_rate_interpretation": "بإيقاع الاستهلاك الحالي ({avg_net} في اليوم)، تغطي الخزينة حوالي {months} شهر من النشاط.",
+            "expense_coverage_interpretation": "الخزينة الحالية ({balance}) تغطي حوالي {months} شهر من المصروفات بإيقاع آخر 30 يوماً (التحصيلات الأخيرة: {monthly_inflows}).",
+            "stable_buffer_interpretation": "خزينة متاحة {balance} دون تسجيل صرفات كبيرة في الفترة الأخيرة.",
+            "insufficient_data_interpretation": "بيانات غير كافية لتقدير أفق الخزينة.",
+            "declining_trend_adjustment": " تعديل حذر: الخزينة تتراجع خلال الفترة المرصودة.",
+            "forecast_decline_adjustment": " المسار الأخير يقترح تشديد هامش الأمان.",
+        },
+
+        # Financial Health Drivers
+        "health_drivers": {
+            "runway": "الأفق المقدر: {months} شهر.",
+            "positive_cashflow": "التدفق الصافي الأخير موجب.",
+            "negative_cashflow": "التدفق الصافي الأخير سالب: {cashflow} في اليوم.",
+            "risk_level": "مستوى المخاطر: {risk_level}.",
+        },
+
+        # Resilience Drivers
+        "resilience_drivers": {
+            "runway": "أفق الخزينة المقدر: {months} شهر.",
+            "positive_cashflow": "التحصيلات تغطي إيقاع المصروفات الأخير.",
+            "negative_cashflow": "استهلاك صافي {cashflow} في اليوم.",
+            "improving_trend": "الخزينة تتحسن خلال الفترة المرصودة.",
+            "declining_trend": "الخزينة تتراجع: اليقظة على هامش الأمان.",
+            "outflow_spike": "المصروفات تزداد بنسبة {pct}% خلال 30 يوماً.",
+            "inflow_drop": "التحصيلات تنخفض بنسبة {pct}% خلال 30 يوماً.",
+        },
+
+        # Alerts
+        "alerts": {
+            "critical_liquidity_title": "سيولة حرجة يجب التعامل معها اليوم",
+            "critical_liquidity_desc": "الأفق المقدر فقط {days} يوماً ({interpretation})",
+            "critical_liquidity_impact": "خطر تأخير في المدفوعات حوالي {amount}.",
+            "critical_liquidity_action": "حظر الصرفات غير الأساسية، تفعيل متابعات العملاء وتأمين خط ائتمان.",
+            "short_margin_title": "هامش خزينة قصير",
+            "short_margin_impact": "قدرة ضئيلة على امتصاص دفعة عميل متأخرة أو مصروف غير متوقع.",
+            "short_margin_action": "وضع خطة خزينة لمدة 30 يوماً مع أولويات الدفع.",
+            "deterioration_title": "الخزينة تتفكك",
+            "deterioration_desc": "متوسط الاستهلاك الصافي {avg_net} في اليوم خلال 30 يوماً.",
+            "deterioration_impact": "تآكل مقدر حوالي {monthly_drain} كل شهر إذا لم يتغير شيء.",
+            "deterioration_action": "تقليل التكاليف المتغيرة وتسريع التحصيلات المؤكدة.",
+            "spending_spike_title": "زيادة غير طبيعية في المصروفات",
+            "spending_spike_desc": "الصرفات زادت بنسبة {pct}% مقارنة بالفترة السابقة.",
+            "spending_spike_impact": "تكلفة إضافية مقدرة حوالي {amount} خلال 30 يوماً.",
+            "spending_spike_action": "التحقق من كل دفعة أعلى من الحد المعتاد وتأجيل المصروفات غير الحرجة.",
+            "spending_accel_title": "تسارع في المصروفات",
+            "spending_accel_desc": "الصرفات زادت بنسبة {pct}% خلال 30 يوماً.",
+            "spending_accel_impact": "ضغط على هامش الخزينة المتاح.",
+            "spending_accel_action": "مراجعة البنود المتغيرة ومواعيد الموردين.",
+            "inflow_drop_title": "انخفاض حاد في التحصيلات",
+            "inflow_drop_desc": "التحصيلات الأخيرة انخفضت بنسبة {pct}% — اعتماد متزايد على عدد قليل من التدفقات النقدية الداخلة.",
+            "inflow_drop_impact": "عجز في الخزينة حوالي {amount} مقارنة بالشهر السابق.",
+            "inflow_drop_action": "تحديد العملاء أو العقود المتأخرة وتأمين الفواتير عالية القيمة.",
+            "inflow_slow_title": "تباطؤ في التحصيلات",
+            "inflow_slow_desc": "التحصيلات انخفضت بنسبة {pct}% خلال 30 يوماً.",
+            "inflow_slow_impact": "خطر ضغط على دورة الخزينة.",
+            "inflow_slow_action": "متابعة الذمم المدينة المفتوحة وتأكيد تواريخ دفع العملاء.",
+            "forecast_low_title": "نقطة منخفضة قادمة في الخزينة",
+            "forecast_low_desc": "قد ينخفض مستوى الخزينة إلى حوالي {min_balance}.",
+            "forecast_low_impact": "فجوة محتملة حوالي {amount} مقارنة بالرصيد الحالي.",
+            "forecast_low_action": "تخطيط التحصيلات وتأجيل المدفوعات قبل أسبوع الضغوط.",
+            "opportunity_title": "فرصة: تحسين فائض الخزينة",
+            "opportunity_desc": "خزينة {balance} مع توليد نقدي موجب.",
+            "opportunity_impact": "تحسين عائد النقد الفائض دون إضعاف العمليات.",
+            "opportunity_action": "تحديد احتياطي تشغيلي أدنى وتخصيص الفائض (تسديد دين، استثمار قصير الأجل).",
+        },
+
+        # Risks
+        "risks": {
+            "default_title": "مخاطر الخزينة",
+            "high_probability": "مرتفعة",
+            "medium_probability": "متوسطة",
+            "immediate_urgency": "فوري",
+        },
+
+        # Decisions
+        "decisions": {
+            "default_action": "إقامة مراجعة أسبوعية للخزينة",
+            "default_benefit": "اكتشاف الضغوط مبكراً وتحديد أولويات التحصيلات.",
+            "default_justification": "الأفق المقدر {months} شهر — الإدارة المنتظمة تحمي هذا الوضع.",
+            "default_horizon": "الـ 30 يوماً القادمة",
+        },
+
+        # Briefing
+        "briefing": {
+            "surplus_opportunity_title": "تعزيز قيمة فائض الخزينة",
+            "surplus_opportunity_desc": "مع {balance} نقداً وتحصيلات تغطي إيقاع المصروفات، يمكن للإدارة هيكلة احتياطي أدنى واستخدام الفائض.",
+            "surplus_opportunity_benefit": "تحسين عائد النقد دون إضعاف العمليات.",
+            "deficit_opportunity_title": "تسريع التحصيلات المؤكدة",
+            "deficit_opportunity_desc": "تحديد أولويات المتابعات على الذمم المدينة المفتوحة لتعويض استهلاك {avg_net} اليومي.",
+            "deficit_opportunity_benefit": "تقليل ضغط الخزينة خلال الـ 30 يوماً القادمة.",
+            "default_decision_action": "إدارة الخزينة في لجنة الإدارة",
+            "default_decision_horizon": "30 يوماً",
+        },
     },
 }
 
 
 def _catalog(locale: str) -> dict:
     return _TEXT.get(normalize_locale(locale), _TEXT[DEFAULT_LOCALE])
+
+
+def get_bi_translation(key: str, locale: str, **kwargs) -> str:
+    """Get a translated string with safe fallbacks."""
+    locale = normalize_locale(locale)
+    catalog = _catalog(locale)
+    # Navigate nested keys
+    parts = key.split(".")
+    value = catalog
+    for part in parts:
+        if isinstance(value, dict) and part in value:
+            value = value[part]
+        else:
+            # Fallback to French
+            catalog_fr = _TEXT["fr"]
+            value_fr = catalog_fr
+            for part_fr in parts:
+                if isinstance(value_fr, dict) and part_fr in value_fr:
+                    value_fr = value_fr[part_fr]
+                else:
+                    return key
+            value = value_fr
+            break
+    if isinstance(value, str) and kwargs:
+        try:
+            return value.format(**kwargs)
+        except (KeyError, ValueError):
+            pass
+    return value if isinstance(value, str) else key
 
 
 def _money(value: float | int | None) -> str:
@@ -176,7 +493,7 @@ def localize_business_intelligence_payload(payload: dict | None, locale: str = D
     """Overwrite user-facing BI prose with locale-specific deterministic content."""
 
     loc = normalize_locale(locale)
-    if not isinstance(payload, dict) or loc == DEFAULT_LOCALE:
+    if not isinstance(payload, dict):
         return payload
 
     text = _catalog(loc)
@@ -244,24 +561,30 @@ def localize_business_intelligence_payload(payload: dict | None, locale: str = D
         outflows = _money((runway.get("avg_daily_outflow") or 0) * 30)
         net = _money((runway.get("avg_daily_net") or 0) * 30)
         briefing["executive_summary"] = text["summary"].format(
+            balance=_money(runway.get("avg_daily_inflow", 0)),  # This is just a placeholder, we'll fix in the service
             health=score,
             resilience=res_score,
-            months=months,
-            risk=text["main_risk_title"],
-            decision=text["decision_action"],
+            runway_months=months,
+            risk_title=text["main_risk_title"],
+            decision_action=text["decision_action"],
         )
         briefing["executive_briefing"] = briefing["executive_summary"]
         briefing["financial_situation"] = text["financial"].format(
             inflows=inflows,
             outflows=outflows,
             net=net,
+            trend="stable"
         )
         briefing["cash_position_analysis"] = text["cash"].format(
             months=months,
             label=resilience["label"],
             score=res_score,
         )
-        briefing["outlook_30_days"] = text["outlook"].format(risk_level=risk_level)
+        briefing["outlook_30_days"] = text["outlook"].format(
+            min_balance=_money(0),
+            trend="stable",
+            risk_level=risk_level
+        )
         briefing["main_risk"] = {
             "title": text["main_risk_title"],
             "description": text["main_risk_desc"],

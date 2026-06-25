@@ -1,26 +1,28 @@
-import { useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Upload, Zap, BarChart4, FileText, BellRing, Settings, LogOut } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
-import { useNotificationShell } from "@/contexts/NotificationShellContext";
-import NotificationBell from "@/components/NotificationBell";
-import { ThemeToggle } from "@/components/ThemeToggle";
-import { LanguageSelector } from "@/components/LanguageSelector";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useLocation, useNavigate } from 'react-router-dom';
+import { LayoutDashboard, Upload, Zap, BarChart4, FileText, BellRing, Settings, LogOut } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { useNotificationShell } from '@/contexts/NotificationShellContext';
+import NotificationBell from '@/components/NotificationBell';
+import { ThemeToggle } from '@/components/ThemeToggle';
+import { LanguageSelector } from '@/components/LanguageSelector';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { useTranslation } from '@/i18n/LanguageProvider';
 
 export default function DashboardLayout({ children }) {
   const navigate = useNavigate();
   const loc = useLocation();
   const { user, logout } = useAuth();
   const { openNotificationCenter } = useNotificationShell();
+  const { t, dir } = useTranslation();
 
   const isActive = (path) => loc.pathname === path;
 
   const navItems = [
-    { path: "/", icon: LayoutDashboard, label: "Tableau de bord" },
-    { path: "/uploads", icon: Upload, label: "Importer" },
-    { path: "/forecasts", icon: Zap, label: "Prévision" },
-    { path: "/decision-center", icon: BarChart4, label: "BI" },
-    { path: "/reports", icon: FileText, label: "Rapports" },
+    { path: '/', icon: LayoutDashboard, label: t('nav.dashboard') },
+    { path: '/uploads', icon: Upload, label: t('nav.uploads') },
+    { path: '/forecasts', icon: Zap, label: t('nav.forecasts') },
+    { path: '/decision-center', icon: BarChart4, label: t('nav.decisionCenter') },
+    { path: '/reports', icon: FileText, label: t('nav.reports') },
   ];
 
   const getInitials = () => {
@@ -30,7 +32,7 @@ export default function DashboardLayout({ children }) {
   };
 
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="min-h-screen bg-background flex" dir={dir}>
       {/* Desktop Sidebar */}
       <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:border-r lg:border-border lg:bg-sidebar">
         <div className="p-6">
@@ -39,7 +41,7 @@ export default function DashboardLayout({ children }) {
               <BarChart4 className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold tracking-tight">Tresorerie PME</h2>
+              <h2 className="text-lg font-semibold tracking-tight">{t('app.name')}</h2>
             </div>
           </div>
         </div>
@@ -51,10 +53,10 @@ export default function DashboardLayout({ children }) {
               <button
                 key={item.path}
                 onClick={() => navigate(item.path)}
-                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm transition-all duration-200 ${
+                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm transition-all duration-200 ease-out ${
                   isActive(item.path)
-                    ? "bg-primary/10 text-primary font-semibold border-l-2 border-primary"
-                    : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                    ? 'bg-primary/10 text-primary font-semibold border-l-2 border-primary'
+                    : 'text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
                 }`}
               >
                 <Icon className="h-5 w-5" />
@@ -66,11 +68,11 @@ export default function DashboardLayout({ children }) {
 
         <div className="p-4 border-t border-sidebar-border mt-4">
           <button
-            onClick={() => navigate("/settings")}
+            onClick={() => navigate('/settings')}
             className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-200"
           >
             <Settings className="h-5 w-5" />
-            Paramètres
+            {t('nav.settings')}
           </button>
         </div>
       </aside>
@@ -84,7 +86,7 @@ export default function DashboardLayout({ children }) {
               <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
                 <BarChart4 className="h-4 w-4 text-primary" />
               </div>
-              <span className="font-semibold">Tresorerie PME</span>
+              <span className="font-semibold">{t('app.name')}</span>
             </div>
           </div>
 
@@ -111,7 +113,7 @@ export default function DashboardLayout({ children }) {
               <button
                 onClick={() => logout()}
                 className="p-2 rounded-xl hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
-                title="Se déconnecter"
+                title={t('common.logout')}
               >
                 <LogOut className="h-5 w-5" />
               </button>
@@ -130,25 +132,25 @@ export default function DashboardLayout({ children }) {
                   onClick={() => navigate(item.path)}
                   className={`flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition-all duration-200 ${
                     isActive(item.path)
-                      ? "text-primary bg-primary/10"
-                      : "text-muted-foreground"
+                      ? 'text-primary bg-primary/10'
+                      : 'text-muted-foreground'
                   }`}
                 >
                   <Icon className="h-5 w-5" />
-                  <span className="text-[11px] font-medium">{item.label.split(" ")[0]}</span>
+                  <span className="text-[11px] font-medium">{item.label.split(' ')[0]}</span>
                 </button>
               );
             })}
             <button
-              onClick={() => navigate("/settings")}
+              onClick={() => navigate('/settings')}
               className={`flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition-all duration-200 ${
-                loc.pathname === "/settings"
-                  ? "text-primary bg-primary/10"
-                  : "text-muted-foreground"
+                loc.pathname === '/settings'
+                  ? 'text-primary bg-primary/10'
+                  : 'text-muted-foreground'
               }`}
             >
               <Settings className="h-5 w-5" />
-              <span className="text-[11px] font-medium">Paramètres</span>
+              <span className="text-[11px] font-medium">{t('nav.settings')}</span>
             </button>
           </div>
         </div>

@@ -12,7 +12,7 @@
 
   :root {
     /* Neutral Colors (Slate Base) */
-    --background: oklch(0.985 0.002 247);
+    --background: #F8FAFC;
     --foreground: oklch(0.14 0.003 285);
     --card: oklch(1 0 0);
     --card-foreground: var(--foreground);
@@ -73,13 +73,13 @@
     --sidebar-ring: var(--ring);
   }
 
-  .dark {
+  html.dark {
     /* Neutral Colors for Dark Mode */
-    --background: oklch(0.12 0.01 285);
+    --background: oklch(0.14 0.01 280);
     --foreground: oklch(0.98 0 0);
-    --card: oklch(0.15 0.01 285);
+    --card: oklch(0.16 0.01 280);
     --card-foreground: var(--foreground);
-    --popover: oklch(0.15 0.01 285);
+    --popover: oklch(0.16 0.01 280);
     --popover-foreground: var(--foreground);
     
     /* Primary: Brighter Blue for Dark Mode */
@@ -87,15 +87,15 @@
     --primary-foreground: oklch(0.14 0.003 285);
     
     /* Secondary */
-    --secondary: oklch(0.2 0.01 285);
+    --secondary: oklch(0.2 0.01 280);
     --secondary-foreground: oklch(0.985 0 0);
     
     /* Muted */
-    --muted: oklch(0.22 0.01 285);
-    --muted-foreground: oklch(0.68 0.01 285);
+    --muted: oklch(0.22 0.01 280);
+    --muted-foreground: oklch(0.68 0.01 280);
     
     /* Accent */
-    --accent: oklch(0.24 0.01 285);
+    --accent: oklch(0.24 0.01 280);
     --accent-foreground: var(--primary);
     
     /* Success */
@@ -111,8 +111,8 @@
     --destructive-foreground: oklch(0.14 0.003 285);
     
     /* Borders & Inputs */
-    --border: oklch(0.28 0.01 285);
-    --input: oklch(0.22 0.01 285);
+    --border: oklch(0.28 0.01 280);
+    --input: oklch(0.22 0.01 280);
     --ring: oklch(0.72 0.14 246);
     
     /* Charts */
@@ -120,16 +120,16 @@
     --chart-2: oklch(0.7 0.16 151);
     --chart-3: oklch(0.75 0.15 83);
     --chart-4: oklch(0.7 0.2 20);
-    --chart-5: oklch(0.68 0.01 285);
+    --chart-5: oklch(0.68 0.01 280);
     
     /* Sidebar */
-    --sidebar: oklch(0.15 0.01 285);
+    --sidebar: oklch(0.16 0.01 280);
     --sidebar-foreground: var(--foreground);
     --sidebar-primary: var(--primary);
     --sidebar-primary-foreground: oklch(0.14 0.003 285);
-    --sidebar-accent: oklch(0.2 0.01 285);
+    --sidebar-accent: oklch(0.2 0.01 280);
     --sidebar-accent-foreground: var(--primary);
-    --sidebar-border: oklch(0.28 0.01 285);
+    --sidebar-border: oklch(0.28 0.01 280);
     --sidebar-ring: var(--ring);
   }
 
@@ -137,14 +137,50 @@
     @apply border-border outline-ring/50;
   }
 
+  /* Premium application background (light mode) */
+  body,
+  #root,
+  .min-h-screen.bg-background,
+  .min-h-screen.bg-gradient-to-b {
+    background-color: var(--background) !important;
+    background-image: 
+      radial-gradient(ellipse 100% 80% at -20% -20%, rgba(59, 130, 246, 0.12), transparent 80%),
+      radial-gradient(ellipse 80% 60% at 120% 120%, rgba(16, 185, 129, 0.08), transparent 80%) !important;
+  }
+
+  /* Premium application background (dark mode) */
+  html.dark body,
+  html.dark #root,
+  html.dark .min-h-screen.bg-background,
+  html.dark .min-h-screen.bg-gradient-to-b {
+    background-color: var(--background) !important;
+    background-image: 
+      radial-gradient(ellipse 100% 80% at -20% -20%, rgba(96, 165, 250, 0.15), transparent 80%),
+      radial-gradient(ellipse 80% 60% at 120% 120%, rgba(34, 211, 238, 0.1), transparent 80%) !important;
+  }
+
   body {
-    @apply bg-background text-foreground antialiased;
+    @apply text-foreground antialiased;
     margin: 0;
     font-feature-settings: "tnum" 1, "lnum" 1; /* Tabular numbers for financial data */
   }
 
   html {
     @apply font-sans;
+  }
+
+  /* Premium card styles */
+  [data-slot="card"] {
+    box-shadow: 0 1px 3px 0px oklch(0 0 0 / 0.04), 0 1px 2px -1px oklch(0 0 0 / 0.04);
+    transition: box-shadow 0.25s ease-out, transform 0.2s ease-out, border-color 0.2s ease-out;
+  }
+  [data-slot="card"]:hover {
+    box-shadow: 0 10px 15px -3px oklch(0 0 0 / 0.08), 0 4px 6px -4px oklch(0 0 0 / 0.06);
+    transform: translateY(-1px);
+    border-color: oklch(0.9 0.01 247);
+  }
+  html.dark [data-slot="card"]:hover {
+    border-color: oklch(0.35 0.01 280);
   }
 }
 
@@ -166,8 +202,8 @@
   .gradient-border {
     background: linear-gradient(135deg, var(--card), oklch(0.99 0.002 247));
   }
-  .dark .gradient-border {
-    background: linear-gradient(135deg, var(--card), oklch(0.18 0.01 285));
+  html.dark .gradient-border {
+    background: linear-gradient(135deg, var(--card), oklch(0.18 0.01 280));
   }
   
   /* Premium Scrollbars */

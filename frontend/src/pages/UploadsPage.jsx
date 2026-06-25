@@ -21,95 +21,7 @@ import {
 } from "../components/ui/sheet";
 import { Skeleton } from "../components/ui/skeleton";
 import { FileText, Calendar, Database, Clock } from "lucide-react";
-
-function formatDate(dateStr, options = {}) {
-  if (!dateStr) return "—";
-  try {
-    const date = new Date(dateStr);
-    if (isNaN(date.getTime())) return "—";
-    if (options.dateStyle) {
-      return date.toLocaleDateString("fr-FR", options);
-    } else {
-      return date.toLocaleDateString("fr-FR", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-      });
-    }
-  } catch (e) {
-    return "—";
-  }
-}
-
-function formatDateRange(dateRange) {
-  if (!dateRange || !dateRange.min_date || !dateRange.max_date) return "—";
-  const format = (dateStr) => {
-    try {
-      return formatDate(dateStr);
-    } catch {
-      return "—";
-    }
-  };
-  return `${format(dateRange.min_date)} → ${format(dateRange.max_date)}`;
-}
-
-function getStatusBadge(upload) {
-  if (upload.duplicate_detected || upload.processing_status === "duplicate_data") {
-    return <Badge variant="secondary">Doublon</Badge>;
-  } else if (upload.status === "failed" || upload.processing_status === "failed") {
-    return <Badge variant="destructive">Erreur</Badge>;
-  } else if (upload.processing_status === "processing") {
-    return <Badge variant="outline">Analyse…</Badge>;
-  } else if (upload.processing_status === "completed_with_errors") {
-    return <Badge variant="outline">Complété (erreurs)</Badge>;
-  } else if (upload.total_company_uploads === 1) {
-    return <Badge variant="default">Historique créé</Badge>;
-  } else {
-    return <Badge variant="default">Fusionné</Badge>;
-  }
-}
-
-function getUploadType(upload) {
-  if (upload.total_company_uploads === 1) {
-    return "Historique initial";
-  }
-  if (upload.classification === "DUPLICATE_UPLOAD") {
-    return "Duplicata";
-  }
-  if (upload.classification === "PARTIAL_OVERLAP") {
-    return "Mise à jour partielle";
-  }
-  return "Mise à jour mensuelle";
-}
-
-function formatNumber(num) {
-  if (num == null) return "—";
-  return num.toString();
-}
-
-function getQualityBadge(dataMaturity) {
-  const variantMap = {
-    "EXCELLENT": "default",
-    "BON": "default",
-    "MOYEN": "secondary",
-    "FAIBLE": "outline",
-  };
-  return <Badge variant={variantMap[dataMaturity] || "outline"}>{dataMaturity || "—"}</Badge>;
-}
-
-function getBusinessImpact(upload, treasuryProfile) {
-  const parts = [];
-  if (upload.records_inserted > 0) {
-    parts.push(`Historique enrichi avec ${upload.records_inserted} nouvelles observations.`);
-  }
-  if (treasuryProfile?.profile?.historical_months) {
-    parts.push(`La mémoire de trésorerie couvre désormais ${Math.round(treasuryProfile.profile.historical_months)} mois.`);
-  }
-  if (treasuryProfile?.profile?.forecasting_enabled) {
-    parts.push("Prévisions automatiquement mises à jour.");
-  }
-  return parts.length > 0 ? parts.join(" ") : "Import complété.";
-}
+import { useTranslation } from "@/i18n/LanguageProvider";
 
 export default function UploadsPage() {
   const navigate = useNavigate();
@@ -117,6 +29,65 @@ export default function UploadsPage() {
   const [treasuryProfile, setTreasuryProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedUpload, setSelectedUpload] = useState(null);
+  const { t, formatDate } = useTranslation();
+
+  function getStatusBadge(upload) {
+    if (upload.duplicate_detected || upload.processing_status === "duplicate_data") {
+      return <Badge variant="secondary">{t("upload.errors.duplicate")}</Badge>;
+    } else if (upload.status === "failed" || upload.processing_status === "failed") {
+      return <Badge variant="destructive">{t("upload.errors.failed")}</Badge>;
+    } else if (upload.processing_status === "processing") {
+      return <Badge variant="outline">{t("upload.processing")}</Badge>;
+    } else if (upload.processing_status === "completed_with_errors") {
+      return <Badge variant="outline">{t("upload.errors.failed")}</Badge>;
+    } else if (upload.total_company_uploads === 1) {
+      return <Badge variant="default">{t("upload.historyUpdated")}</Badge>;
+    } else {
+      return <Badge variant="default">{t("upload.intelligenceUpdated")}</Badge>;
+    }
+  }
+
+  function getUploadType(upload) {
+    if (upload.total_company_uploads === 1) {
+      return t("uploadsPage.typeInitialHistory");
+    }
+    if (upload.classification === "DUPLICATE_UPLOAD") {
+      return t("upload.errors.duplicate");
+    }
+    if (upload.classification === "PARTIAL_OVERLAP") {
+      return t("uploadsPage.typePartialUpdate");
+    }
+    return t("uploadsPage.typeMonthlyUpdate");
+  }
+
+  function formatNumber(num) {
+    if (num == null) return "—";
+    return num.toString();
+  }
+
+  function getQualityBadge(dataMaturity) {
+    const variantMap = {
+      "EXCELLENT": "default",
+      "BON": "default",
+      "MOYEN": "secondary",
+      "FAIBLE": "outline",
+    };
+    return <Badge variant={variantMap[dataMaturity] || "outline"}>{dataMaturity || "—"}</Badge>;
+  }
+
+  function getBusinessImpact(upload, treasuryProfile) {
+    const parts = [];
+    if (upload.records_inserted > 0) {
+      parts.push(t("uploadsPage.historyEnriched", { count: upload.records_inserted }));
+    }
+    if (treasuryProfile?.profile?.historical_months) {
+      parts.push(t("uploadsPage.treasuryMemoryNowCovers", { count: Math.round(treasuryProfile.profile.historical_months) }));
+    }
+    if (treasuryProfile?.profile?.forecasting_enabled) {
+      parts.push(t("uploadsPage.forecastsAutomaticallyUpdated"));
+    }
+    return parts.length > 0 ? parts.join(" ") : t("upload.success");
+  }
 
   useEffect(() => {
     fetchAllData();
@@ -185,8 +156,8 @@ export default function UploadsPage() {
   return (
     <div className="max-w-6xl mx-auto py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-foreground mb-2">Fichiers importés</h1>
-        <p className="text-muted-foreground">Historique des uploads et mémoire de trésorerie</p>
+        <h1 className="text-3xl font-bold text-foreground mb-2">{t("uploadsPage.title")}</h1>
+        <p className="text-muted-foreground">{t("uploadsPage.subtitle")}</p>
       </div>
 
       {/* KPI Cards */}
@@ -196,9 +167,9 @@ export default function UploadsPage() {
             <div className="flex items-center gap-3">
               <Calendar className="w-5 h-5 text-muted-foreground" />
               <div>
-                <p className="text-sm text-muted-foreground">Historique disponible</p>
+                <p className="text-sm text-muted-foreground">{t("treasuryMemory.historyAvailable")}</p>
                 <p className="text-2xl font-bold">
-                  {treasuryProfile?.profile?.historical_months ? Math.round(treasuryProfile.profile.historical_months) : 0} mois
+                  {treasuryProfile?.profile?.historical_months ? `${Math.round(treasuryProfile.profile.historical_months)} ${t("common.months")}` : `0 ${t("common.months")}`}
                 </p>
               </div>
             </div>
@@ -209,7 +180,7 @@ export default function UploadsPage() {
             <div className="flex items-center gap-3">
               <FileText className="w-5 h-5 text-muted-foreground" />
               <div>
-                <p className="text-sm text-muted-foreground">Fichiers importés</p>
+                <p className="text-sm text-muted-foreground">{t("uploadsPage.colFile")}</p>
                 <p className="text-2xl font-bold">{uploads.length}</p>
               </div>
             </div>
@@ -220,9 +191,9 @@ export default function UploadsPage() {
             <div className="flex items-center gap-3">
               <Database className="w-5 h-5 text-muted-foreground" />
               <div>
-                <p className="text-sm text-muted-foreground">Observations</p>
+                <p className="text-sm text-muted-foreground">{t("treasuryMemory.observations")}</p>
                 <p className="text-2xl font-bold">
-                  {treasuryProfile?.profile?.historical_months ? Math.round(treasuryProfile.profile.historical_months * 30) : 0} jours
+                  {treasuryProfile?.profile?.historical_months ? `${Math.round(treasuryProfile.profile.historical_months * 30)} ${t("common.days")}` : `0 ${t("common.days")}`}
                 </p>
               </div>
             </div>
@@ -233,7 +204,7 @@ export default function UploadsPage() {
             <div className="flex items-center gap-3">
               <Clock className="w-5 h-5 text-muted-foreground" />
               <div>
-                <p className="text-sm text-muted-foreground">Dernière mise à jour</p>
+                <p className="text-sm text-muted-foreground">{t("treasuryMemory.lastUpdate")}</p>
                 <p className="text-2xl font-bold">
                   {uploads[0]?.created_at
                     ? formatDate(uploads[0].created_at)
@@ -249,10 +220,10 @@ export default function UploadsPage() {
         <Card>
           <CardContent className="pt-6 text-center">
             <FileText className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
-            <h2 className="text-xl font-semibold text-foreground mb-2">Aucun fichier importé</h2>
-            <p className="text-muted-foreground mb-6">Importez vos données de trésorerie pour commencer.</p>
+            <h2 className="text-xl font-semibold text-foreground mb-2">{t("uploadsPage.emptyTitle")}</h2>
+            <p className="text-muted-foreground mb-6">{t("uploadsPage.emptyBody")}</p>
             <Button onClick={() => navigate("/")}>
-              Aller au tableau de bord
+              {t("uploadsPage.goDashboard")}
             </Button>
           </CardContent>
         </Card>
@@ -262,13 +233,13 @@ export default function UploadsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Fichier</TableHead>
-                  <TableHead>Date import</TableHead>
-                  <TableHead>Période détectée</TableHead>
-                  <TableHead>Lignes importées</TableHead>
-                  <TableHead>Type d'upload</TableHead>
-                  <TableHead>Statut</TableHead>
-                  <TableHead className="text-right">Détails</TableHead>
+                  <TableHead>{t("uploadsPage.colFile")}</TableHead>
+                  <TableHead>{t("uploadsPage.colDate")}</TableHead>
+                  <TableHead>{t("uploadsPage.colPeriod")}</TableHead>
+                  <TableHead>{t("uploadsPage.colRecords")}</TableHead>
+                  <TableHead>{t("uploadsPage.colType")}</TableHead>
+                  <TableHead>{t("uploadsPage.colStatus")}</TableHead>
+                  <TableHead className="text-right">{t("uploadsPage.colActions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -293,13 +264,13 @@ export default function UploadsPage() {
                         : "—"}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
-                      {formatDateRange(upload.date_range)}
+                      {upload.date_range?.min_date && upload.date_range?.max_date ? `${formatDate(upload.date_range.min_date)} → ${formatDate(upload.date_range.max_date)}` : "—"}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {upload.records_inserted > 0
-                        ? `${upload.records_inserted} lignes`
+                        ? `${upload.records_inserted} ${t("uploadsPage.rowsLabel")}`
                         : upload.rows_processed != null
-                        ? `${upload.rows_processed} lignes`
+                        ? `${upload.rows_processed} ${t("uploadsPage.rowsLabel")}`
                         : "—"}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
@@ -310,7 +281,7 @@ export default function UploadsPage() {
                     </TableCell>
                     <TableCell className="text-right">
                       <Button variant="ghost">
-                        Voir détails
+                        {t("uploadsPage.viewDetails")}
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -324,7 +295,7 @@ export default function UploadsPage() {
       <Sheet open={!!selectedUpload} onOpenChange={closeSheet}>
         <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
           <SheetHeader>
-            <SheetTitle>Détails de l'import</SheetTitle>
+            <SheetTitle>{t("uploadsPage.modalTitle")}</SheetTitle>
             <SheetClose />
           </SheetHeader>
 
@@ -333,15 +304,15 @@ export default function UploadsPage() {
               {/* SECTION 1: File Info */}
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Informations du fichier</CardTitle>
+                  <CardTitle className="text-sm font-medium">{t("uploadsPage.fileInfo")}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Nom:</span>
+                    <span className="text-muted-foreground">{t("uploadsPage.name")}</span>
                     <span className="font-medium truncate max-w-[60%]">{selectedUpload.original_filename}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Date d'import:</span>
+                    <span className="text-muted-foreground">{t("uploadsPage.colDate")}:</span>
                     <span className="font-medium">
                       {selectedUpload.created_at
                         ? formatDate(selectedUpload.created_at, {
@@ -352,11 +323,11 @@ export default function UploadsPage() {
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Type d'upload:</span>
+                    <span className="text-muted-foreground">{t("uploadsPage.colType")}:</span>
                     <span className="font-medium">{getUploadType(selectedUpload)}</span>
                   </div>
                   <div className="flex justify-between text-sm items-center">
-                    <span className="text-muted-foreground">Statut:</span>
+                    <span className="text-muted-foreground">{t("uploadsPage.colStatus")}:</span>
                     {getStatusBadge(selectedUpload)}
                   </div>
                 </CardContent>
@@ -365,27 +336,29 @@ export default function UploadsPage() {
               {/* SECTION 2: Processing */}
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Traitement</CardTitle>
+                  <CardTitle className="text-sm font-medium">{t("uploadsPage.processing")}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Période:</span>
-                    <span className="font-medium">{formatDateRange(selectedUpload.date_range)}</span>
+                    <span className="text-muted-foreground">{t("uploadsPage.colPeriod")}:</span>
+                    <span className="font-medium">
+                      {selectedUpload.date_range?.min_date && selectedUpload.date_range?.max_date ? `${formatDate(selectedUpload.date_range.min_date)} → ${formatDate(selectedUpload.date_range.max_date)}` : "—"}
+                    </span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Lignes traitées:</span>
+                    <span className="text-muted-foreground">{t("uploadsPage.rowsProcessed")}</span>
                     <span className="font-medium">{formatNumber(selectedUpload.rows_processed)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Lignes insérées:</span>
+                    <span className="text-muted-foreground">{t("uploadsPage.rowsInserted")}</span>
                     <span className="font-medium">{formatNumber(selectedUpload.records_inserted)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Lignes mises à jour:</span>
+                    <span className="text-muted-foreground">{t("uploadsPage.rowsUpdated")}</span>
                     <span className="font-medium">{formatNumber(selectedUpload.records_updated)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Doublons ignorés:</span>
+                    <span className="text-muted-foreground">{t("uploadsPage.duplicatesSkipped")}</span>
                     <span className="font-medium">{formatNumber(selectedUpload.records_skipped)}</span>
                   </div>
                 </CardContent>
@@ -394,33 +367,33 @@ export default function UploadsPage() {
               {/* SECTION 3: Treasury Memory */}
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Mémoire de trésorerie</CardTitle>
+                  <CardTitle className="text-sm font-medium">{t("treasuryMemory.title")}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Historique disponible:</span>
+                    <span className="text-muted-foreground">{t("treasuryMemory.historyAvailable")}:</span>
                     <span className="font-medium">
-                      {treasuryProfile?.profile?.historical_months ? Math.round(treasuryProfile.profile.historical_months) : "—"} mois
+                      {treasuryProfile?.profile?.historical_months ? `${Math.round(treasuryProfile.profile.historical_months)} ${t("common.months")}` : "—"}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Observations totales:</span>
+                    <span className="text-muted-foreground">{t("treasuryMemory.observations")}:</span>
                     <span className="font-medium">
-                      {treasuryProfile?.profile?.historical_months ? `${Math.round(treasuryProfile.profile.historical_months * 30)} jours` : "—"}
+                      {treasuryProfile?.profile?.historical_months ? `${Math.round(treasuryProfile.profile.historical_months * 30)} ${t("common.days")}` : "—"}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm items-center">
-                    <span className="text-muted-foreground">Qualité des données:</span>
+                    <span className="text-muted-foreground">{t("treasuryMemory.intelligenceLevel")}:</span>
                     {getQualityBadge(selectedUpload.data_maturity)}
                   </div>
                   <div className="flex justify-between text-sm items-center">
-                    <span className="text-muted-foreground">Prévisions activées:</span>
+                    <span className="text-muted-foreground">{t("forecast.forecasts")}:</span>
                     <Badge variant={treasuryProfile?.profile?.forecasting_enabled ? "default" : "outline"}>
-                      {treasuryProfile?.profile?.forecasting_enabled ? "Oui" : "Non"}
+                      {treasuryProfile?.profile?.forecasting_enabled ? t("uploadsPage.yes") : t("uploadsPage.no")}
                     </Badge>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Dernière date connue:</span>
+                    <span className="text-muted-foreground">{t("uploadsPage.lastKnownDate")}</span>
                     <span className="font-medium">—</span>
                   </div>
                 </CardContent>
@@ -429,7 +402,7 @@ export default function UploadsPage() {
               {/* SECTION 4: Business Impact */}
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Impact métier</CardTitle>
+                  <CardTitle className="text-sm font-medium">{t("uploadsPage.businessImpact")}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-foreground">{getBusinessImpact(selectedUpload, treasuryProfile)}</p>

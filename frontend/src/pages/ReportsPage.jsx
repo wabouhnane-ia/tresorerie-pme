@@ -91,39 +91,43 @@ export default function ReportsPage() {
   const [showLanguageSheetOpen, setShowLanguageSheetOpen] = useState(false);
 
   const handleGenerateReport = async (language) => {
-    setShowLanguageSheetOpen(false);
-    setGenerating(true);
-    setError(null);
-    setSuccess(false);
+        setShowLanguageSheetOpen(false);
+        setGenerating(true);
+        setError(null);
+        setSuccess(false);
 
-    try {
-      const response = await API.get("/dashboard/report", {
-        params: { language },
-        responseType: "blob",
-      });
+        try {
+            const response = await API.get("/dashboard/report", {
+                params: { language },
+                responseType: "blob",
+            });
 
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement("a");
-      link.href = url;
-      const prefix = { fr: "rapport-tresorerie-executif", en: "executive-treasury-report", ar: "report" }[language] || "rapport-tresorerie-executif";
-      link.setAttribute(
-        "download",
-        `${prefix}-${new Date().toISOString().split("T")[0]}.pdf`
-      );
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement("a");
+            link.href = url;
+            const prefix = { 
+                fr: "rapport-tresorerie-executif", 
+                en: "executive-treasury-report", 
+                ar: "تقرير-الخزينة-التنفيذي" 
+            }[language] || "rapport-tresorerie-executif";
+            link.setAttribute(
+                "download",
+                `${prefix}-${new Date().toISOString().split("T")[0]}.pdf`
+            );
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
 
-      setSuccess(true);
-      setTimeout(() => setSuccess(false), 3000);
-    } catch (err) {
-      console.error("Failed to generate report:", err);
-      setError("Échec de la génération du rapport. Veuillez réessayer.");
-    } finally {
-      setGenerating(false);
-    }
-  };
+            setSuccess(true);
+            setTimeout(() => setSuccess(false), 3000);
+        } catch (err) {
+            console.error("Failed to generate report:", err);
+            setError("Échec de la génération du rapport. Veuillez réessayer.");
+        } finally {
+            setGenerating(false);
+        }
+    };
 
   const getStatusBadge = (status) => {
     const configs = {

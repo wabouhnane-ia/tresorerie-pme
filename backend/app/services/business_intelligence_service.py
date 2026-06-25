@@ -11,8 +11,10 @@ from app.db.mongodb import database
 from app.services import analytics_service, forecast_db_service
 from app.services.enhanced_recommendation_engine import EnhancedRecommendationEngine, ForecastMetrics
 from app.core.locale import normalize_locale
-from app.i18n.business_intelligence_translations import localize_business_intelligence_payload
-from app.utils.locale_content import normalize_risk_entry, normalize_risk_intelligence
+from app.i18n.business_intelligence_translations import (
+    get_bi_translation,
+    localize_business_intelligence_payload,
+)
 
 
 def _format_mad(value: float) -> str:
@@ -25,27 +27,27 @@ def _clamp(value: float, minimum: int = 0, maximum: int = 100) -> int:
 
 def _health_label(score: int) -> tuple[str, str]:
     if score >= 90:
-        return "Excellente santé financière", "excellent"
+        return "excellent", "excellent"
     if score >= 75:
-        return "Bonne santé financière", "healthy"
+        return "healthy", "healthy"
     if score >= 60:
-        return "Vigilance", "vigilance"
+        return "vigilance", "vigilance"
     if score >= 40:
-        return "Situation fragile", "fragile"
-    return "Situation critique", "critical"
+        return "fragile", "fragile"
+    return "critical", "critical"
 
 
 def _resilience_label(score: int) -> tuple[str, str]:
     """Higher score = stronger treasury resilience (easier for non-financial managers)."""
     if score >= 90:
-        return "Très forte", "excellent"
+        return "excellent", "excellent"
     if score >= 75:
-        return "Forte", "healthy"
+        return "healthy", "healthy"
     if score >= 60:
-        return "Modérée", "vigilance"
+        return "vigilance", "vigilance"
     if score >= 40:
-        return "Faible", "fragile"
-    return "Critique", "critical"
+        return "fragile", "fragile"
+    return "critical", "critical"
 
 
 def _runway_level(days: int) -> str:
@@ -84,9 +86,12 @@ def _severity_from_score(score: float) -> str:
 class BusinessIntelligenceService:
     """Builds the V3 executive Business Intelligence payload."""
 
-    async def generate(self, company_id: str, locale: str = "fr") -> dict[str, Any] | None:
+    async def generate(self, company_id: str, locale: str = "fr", precomputed_context: dict | None = None) -> dict[str, Any] | None:
         locale = normalize_locale(locale)
-        context = await analytics_service.get_treasury_context(company_id)
+        if precomputed_context:
+            context = precomputed_context
+        else:
+            context = await analytics_service.get_treasury_context(company_id)
         if not context:
             return None
 
@@ -102,7 +107,7 @@ class BusinessIntelligenceService:
             {"company_id": ObjectId(company_id), "status": "completed"},
             sort=[("completed_at", -1)]
         )
-        
+
         prediction_drivers = []
         if latest_run:
             if latest_run.get("confidence_score") is not None:
@@ -117,13 +122,14 @@ class BusinessIntelligenceService:
 
         records = context.get("records") or []
         ratios = self._period_ratios(records)
-        runway = self._cash_runway(context, ratios, forecast_metrics)
+        runway = self._cash_runway(context, ratios, forecast_metrics, locale)
         health = self._financial_health_score(
             context,
             forecast_metrics,
             risk_summary,
             runway,
             ratios,
+            locale
         )
         resilience = self._treasury_resilience_score(
             context,
@@ -131,10 +137,11 @@ class BusinessIntelligenceService:
             risk_summary,
             runway,
             ratios,
+            locale
         )
-        alerts = self._smart_alerts(context, forecast_metrics, risk_summary, runway, ratios)
+        alerts = self._smart_alerts(context, forecast_metrics, risk_summary, runway, ratios, locale)
         top_risks = self._top_risks(risk_intelligence, alerts, context, ratios, runway, locale)
-        decisions = self._top_decisions(recommendations, context, runway, ratios)
+        decisions = self._top_decisions(recommendations, context, runway, ratios, locale)
         raw_executive = recommendations_payload.get("executive_analysis")
         executive_briefing = self._build_executive_briefing_v3(
             raw_executive=raw_executive,
@@ -150,6 +157,7 @@ class BusinessIntelligenceService:
             top_risks=top_risks,
             decisions=decisions,
             prediction_drivers=prediction_drivers,
+            locale=locale
         )
 
         payload = {
@@ -240,56 +248,62 @@ class BusinessIntelligenceService:
         context: dict,
         ratios: dict,
         forecast_metrics: ForecastMetrics,
+        locale: str
     ) -> dict[str, Any]:
         """
         Estimate operating horizon from balance, inflows, outflows, burn, and trend.
         Does not use a flat 365-day cap when cash generation is positive.
         """
         balance = float(context.get("treasury_balance") or 0)
-        avg_daily_net = float(context.get("avg_30d_cashflow") or 0)
-        avg_daily_outflow = ratios["avg_daily_outflow"]
-        avg_daily_inflow = ratios["avg_daily_inflow"]
+        avg_net = float(context.get("avg_30d_cashflow") or 0)
+        avg_outflow = ratios["avg_daily_outflow"]
+        avg_inflow = ratios["avg_daily_inflow"]
         monthly_outflows = ratios["last_outflows"]
         monthly_inflows = ratios["last_inflows"]
         trend = context.get("trend", "stable")
 
-        if avg_daily_net < 0 and abs(avg_daily_net) > 1e-6:
-            days = int(balance / abs(avg_daily_net))
+        if avg_net < 0 and abs(avg_net) > 1e-6:
+            days = int(balance / abs(avg_net))
             method = "burn_rate"
-            interpretation = (
-                f"Au rythme actuel de consommation ({_format_mad(abs(avg_daily_net))} par jour), "
-                f"la trésorerie couvre environ {round(days / 30.44, 1)} mois d'activité."
+            interpretation = get_bi_translation(
+                "cash_runway.burn_rate_interpretation",
+                locale,
+                avg_net=_format_mad(abs(avg_net)),
+                months=round(days / 30.44, 1)
             )
         elif monthly_outflows > 1e-6:
             daily_expense_pace = monthly_outflows / 30.44
             days = int(balance / daily_expense_pace)
             method = "expense_coverage"
-            interpretation = (
-                f"La trésorerie actuelle ({_format_mad(balance)}) couvre environ "
-                f"{round(days / 30.44, 1)} mois de dépenses au rythme des 30 derniers jours "
-                f"(encaissements récents : {_format_mad(monthly_inflows)})."
+            interpretation = get_bi_translation(
+                "cash_runway.expense_coverage_interpretation",
+                locale,
+                balance=_format_mad(balance),
+                months=round(days / 30.44, 1),
+                monthly_inflows=_format_mad(monthly_inflows)
             )
         elif balance > 0:
             days = 180
             method = "stable_buffer"
-            interpretation = (
-                f"Trésorerie disponible de {_format_mad(balance)} sans sorties significatives "
-                "enregistrées sur la période récente."
+            interpretation = get_bi_translation(
+                "cash_runway.stable_buffer_interpretation",
+                locale,
+                balance=_format_mad(balance)
             )
         else:
             days = 0
             method = "insufficient_data"
-            interpretation = "Données insuffisantes pour estimer l'autonomie de trésorerie."
+            interpretation = get_bi_translation("cash_runway.insufficient_data_interpretation", locale)
 
         if trend == "declining":
             days = int(days * 0.8)
-            interpretation += " Ajustement prudent : la trésorerie recule sur la période observée."
+            interpretation += get_bi_translation("cash_runway.declining_trend_adjustment", locale)
         elif forecast_metrics.trend == "declining":
             days = int(days * 0.85)
-            interpretation += " La trajectoire récente suggère une marge de sécurité à resserrer."
+            interpretation += get_bi_translation("cash_runway.forecast_decline_adjustment", locale)
 
-        if avg_daily_net > 0 and monthly_outflows > 0:
-            surplus_days = int((balance + avg_daily_net * 30) / (monthly_outflows / 30.44))
+        if avg_net > 0 and monthly_outflows > 0:
+            surplus_days = int((balance + avg_net * 30) / (monthly_outflows / 30.44))
             days = max(days, min(surplus_days, 730))
 
         days = max(0, min(days, 730))
@@ -302,9 +316,9 @@ class BusinessIntelligenceService:
             "level": level,
             "interpretation": interpretation,
             "method": method,
-            "avg_daily_inflow": round(avg_daily_inflow, 2),
-            "avg_daily_outflow": round(avg_daily_outflow, 2),
-            "avg_daily_net": round(avg_daily_net, 2),
+            "avg_daily_inflow": round(avg_inflow, 2),
+            "avg_daily_outflow": round(avg_outflow, 2),
+            "avg_daily_net": round(avg_net, 2),
         }
 
     def _financial_health_score(
@@ -314,17 +328,18 @@ class BusinessIntelligenceService:
         risk_summary: dict,
         runway: dict,
         ratios: dict,
+        locale: str
     ) -> dict[str, Any]:
         balance = float(context.get("treasury_balance") or 0)
         cashflow = float(context.get("avg_30d_cashflow") or 0)
-        risk_score = float(risk_summary.get("global_risk_score") or _risk_penalty(context.get("risk_level", "low")))
+        risk_level = float(risk_summary.get("global_risk_score") or _risk_penalty(context.get("risk_level", "low")))
 
         liquidity_quality = min(100, max(0, runway["days"] / 180 * 100))
         stability = max(0, 100 - ratios["balance_volatility_ratio"] * 500)
-        cashflow_quality = 85 if cashflow > 0 else max(0, 60 + cashflow / max(abs(balance), 1) * 1000)
+        cashflow_quality = 85 if cashflow >= 0 else max(0, 60 + cashflow / max(abs(balance), 1) * 1000)
         volatility_quality = max(0, 100 - min(100, ratios["daily_volatility"] / max(abs(cashflow), 10000) * 40))
         forecast_quality = forecast_metrics.confidence_score * 100 if forecast_metrics.confidence_score else 60
-        risk_quality = max(0, 100 - risk_score)
+        risk_quality = max(0, 100 - risk_level)
 
         score = _clamp(
             liquidity_quality * 0.25
@@ -336,15 +351,17 @@ class BusinessIntelligenceService:
         )
         label, category = _health_label(score)
 
-        drivers = [
-            f"Autonomie estimée : {runway['months']} mois.",
-            "Flux net récent positif." if cashflow >= 0 else f"Flux net récent négatif : {_format_mad(cashflow)} par jour.",
-            f"Niveau de risque global : {risk_summary.get('global_risk_level', 'LOW')}.",
-        ]
+        drivers = []
+        drivers.append(get_bi_translation("health_drivers.runway", locale, months=runway["months"]))
+        if cashflow >= 0:
+            drivers.append(get_bi_translation("health_drivers.positive_cashflow", locale))
+        else:
+            drivers.append(get_bi_translation("health_drivers.negative_cashflow", locale, cashflow=_format_mad(cashflow)))
+        drivers.append(get_bi_translation("health_drivers.risk_level", locale, risk_level=risk_level))
 
         return {
             "score": score,
-            "label": label,
+            "label": get_bi_translation(f"health.{label}", locale),
             "category": category,
             "explanation": " ".join(drivers),
             "methodology": {
@@ -364,15 +381,16 @@ class BusinessIntelligenceService:
         risk_summary: dict,
         runway: dict,
         ratios: dict,
+        locale: str
     ) -> dict[str, Any]:
         """Treasury Resilience Score — higher is better (capacity to absorb shocks)."""
         cashflow = float(context.get("avg_30d_cashflow") or 0)
-        risk_score = float(risk_summary.get("global_risk_score") or _risk_penalty(context.get("risk_level", "low")))
+        risk_level = float(risk_summary.get("global_risk_score") or _risk_penalty(context.get("risk_level", "low")))
         buffer_score = min(100, runway["days"] / 180 * 100)
         operating_strength = 90 if cashflow >= 0 else max(0, 70 - min(70, abs(cashflow) / 10000))
         trend_score = 80 if forecast_metrics.trend in {"stable", "improving"} else 45
         volatility_score = max(0, 100 - ratios["daily_volatility"] / 1000)
-        risk_exposure = max(0, 100 - risk_score)
+        risk_exposure = max(0, 100 - risk_level)
 
         score = _clamp(
             buffer_score * 0.30
@@ -383,30 +401,32 @@ class BusinessIntelligenceService:
         )
         label, category = _resilience_label(score)
 
-        drivers = [
-            f"Horizon de trésorerie estimé : {runway['months']} mois.",
-            "Les encaissements couvrent le rythme de dépenses récent." if cashflow >= 0 else f"Consommation nette de {_format_mad(abs(cashflow))} par jour.",
-        ]
+        drivers = []
+        drivers.append(get_bi_translation("resilience_drivers.runway", locale, months=runway["months"]))
+        if cashflow >= 0:
+            drivers.append(get_bi_translation("resilience_drivers.positive_cashflow", locale))
+        else:
+            drivers.append(get_bi_translation("resilience_drivers.negative_cashflow", locale, cashflow=_format_mad(abs(cashflow))))
         if context.get("trend") == "improving":
-            drivers.append("La trésorerie progresse sur la période observée.")
+            drivers.append(get_bi_translation("resilience_drivers.improving_trend", locale))
         elif context.get("trend") == "declining":
-            drivers.append("La trésorerie recule : vigilance sur la marge de sécurité.")
+            drivers.append(get_bi_translation("resilience_drivers.declining_trend", locale))
         if ratios["outflow_change_pct"] > 0.1:
-            drivers.append(f"Dépenses en hausse de {round(ratios['outflow_change_pct'] * 100)}% sur 30 jours.")
+            drivers.append(get_bi_translation("resilience_drivers.outflow_spike", locale, pct=round(ratios["outflow_change_pct"] * 100)))
         if ratios["inflow_change_pct"] < -0.1:
-            drivers.append(f"Encaissements en baisse de {abs(round(ratios['inflow_change_pct'] * 100))}% sur 30 jours.")
+            drivers.append(get_bi_translation("resilience_drivers.inflow_drop", locale, pct=abs(round(ratios["inflow_change_pct"] * 100))))
 
         return {
             "score": score,
-            "label": label,
+            "label": get_bi_translation(f"resilience.{label}", locale),
             "category": category,
             "drivers": drivers[:5],
             "interpretation": (
-                "Capacité élevée à absorber un choc de trésorerie."
+                get_bi_translation("resilience_interpretation_high", locale)
                 if score >= 75
-                else "Marge de sécurité limitée : des actions de direction sont à prévoir."
+                else get_bi_translation("resilience_interpretation_low", locale)
                 if score < 60
-                else "Situation gérable avec un pilotage régulier des flux."
+                else get_bi_translation("resilience_interpretation_mid", locale)
             ),
         }
 
@@ -417,6 +437,7 @@ class BusinessIntelligenceService:
         risk_summary: dict,
         runway: dict,
         ratios: dict,
+        locale: str
     ) -> list[dict[str, Any]]:
         alerts: list[dict[str, Any]] = []
 
@@ -449,20 +470,20 @@ class BusinessIntelligenceService:
             add(
                 "Critical",
                 "liquidity",
-                "Liquidité critique à traiter aujourd'hui",
-                f"Autonomie estimée à {runway['days']} jours seulement ({runway['interpretation']})",
-                f"Risque de retard de paiement sur environ {_format_mad(ratios['avg_daily_outflow'] * min(runway['days'], 30))}.",
-                "Bloquer les sorties non essentielles, activer les relances clients et sécuriser une ligne de trésorerie.",
+                get_bi_translation("alerts.critical_liquidity_title", locale),
+                get_bi_translation("alerts.critical_liquidity_desc", locale, days=runway["days"], interpretation=runway["interpretation"]),
+                get_bi_translation("alerts.critical_liquidity_impact", locale, amount=_format_mad(ratios["avg_daily_outflow"] * min(runway["days"], 30))),
+                get_bi_translation("alerts.critical_liquidity_action", locale),
                 0,
             )
         elif runway["days"] < 90:
             add(
                 "High",
                 "liquidity",
-                "Marge de trésorerie courte",
+                get_bi_translation("alerts.short_margin_title", locale),
                 runway["interpretation"],
-                "Peu de capacité à absorber un retard client ou une dépense imprévue.",
-                "Établir un plan de trésorerie sur 30 jours avec priorités de paiement.",
+                get_bi_translation("alerts.short_margin_impact", locale),
+                get_bi_translation("alerts.short_margin_action", locale),
                 1,
             )
 
@@ -471,10 +492,10 @@ class BusinessIntelligenceService:
             add(
                 "High",
                 "deterioration",
-                "La trésorerie se dégrade",
-                f"Consommation nette moyenne de {_format_mad(abs(avg_net))} par jour sur 30 jours.",
-                f"Érosion estimée d'environ {_format_mad(monthly_drain)} par mois si rien ne change.",
-                "Réduire les charges variables et accélérer les encaissements confirmés.",
+                get_bi_translation("alerts.deterioration_title", locale),
+                get_bi_translation("alerts.deterioration_desc", locale, avg_net=_format_mad(abs(avg_net))),
+                get_bi_translation("alerts.deterioration_impact", locale, monthly_drain=_format_mad(monthly_drain)),
+                get_bi_translation("alerts.deterioration_action", locale),
                 2,
             )
 
@@ -483,20 +504,20 @@ class BusinessIntelligenceService:
             add(
                 "High",
                 "spending",
-                "Hausse anormale des dépenses",
-                f"Les sorties ont augmenté de {round(ratios['outflow_change_pct'] * 100)}% vs la période précédente.",
-                f"Surcoût estimé d'environ {_format_mad(max(0, spike))} sur 30 jours.",
-                "Valider chaque paiement supérieur au seuil habituel et reporter les dépenses non critiques.",
+                get_bi_translation("alerts.spending_spike_title", locale),
+                get_bi_translation("alerts.spending_spike_desc", locale, pct=round(ratios["outflow_change_pct"] * 100)),
+                get_bi_translation("alerts.spending_spike_impact", locale, amount=_format_mad(max(0, spike))),
+                get_bi_translation("alerts.spending_spike_action", locale),
                 3,
             )
         elif ratios["outflow_change_pct"] > 0.1:
             add(
                 "Medium",
                 "spending",
-                "Dépenses en accélération",
-                f"Sorties en hausse de {round(ratios['outflow_change_pct'] * 100)}% sur 30 jours.",
-                "Pression sur la marge de trésorerie disponible.",
-                "Revoir les postes variables et les échéances fournisseurs.",
+                get_bi_translation("alerts.spending_accel_title", locale),
+                get_bi_translation("alerts.spending_accel_desc", locale, pct=round(ratios["outflow_change_pct"] * 100)),
+                get_bi_translation("alerts.spending_accel_impact", locale),
+                get_bi_translation("alerts.spending_accel_action", locale),
                 4,
             )
 
@@ -505,20 +526,20 @@ class BusinessIntelligenceService:
             add(
                 "High",
                 "concentration",
-                "Encaissements en forte baisse",
-                f"Encaissements récents en recul de {abs(round(ratios['inflow_change_pct'] * 100))}% — dépendance accrue à quelques entrées de cash.",
-                f"Manque à gagner de trésorerie d'environ {_format_mad(drop)} vs le mois précédent.",
-                "Identifier les clients ou contrats en retard et sécuriser les factures à forte valeur.",
+                get_bi_translation("alerts.inflow_drop_title", locale),
+                get_bi_translation("alerts.inflow_drop_desc", locale, pct=abs(round(ratios["inflow_change_pct"] * 100))),
+                get_bi_translation("alerts.inflow_drop_impact", locale, amount=_format_mad(drop)),
+                get_bi_translation("alerts.inflow_drop_action", locale),
                 5,
             )
         elif ratios["inflow_change_pct"] < -0.1:
             add(
                 "Medium",
                 "concentration",
-                "Ralentissement des encaissements",
-                f"Encaissements en baisse de {abs(round(ratios['inflow_change_pct'] * 100))}% sur 30 jours.",
-                "Risque de tension sur le cycle de trésorerie.",
-                "Relancer les créances ouvertes et confirmer les dates de paiement clients.",
+                get_bi_translation("alerts.inflow_slow_title", locale),
+                get_bi_translation("alerts.inflow_slow_desc", locale, pct=abs(round(ratios["inflow_change_pct"] * 100))),
+                get_bi_translation("alerts.inflow_slow_impact", locale),
+                get_bi_translation("alerts.inflow_slow_action", locale),
                 6,
             )
 
@@ -527,10 +548,10 @@ class BusinessIntelligenceService:
             add(
                 "Medium",
                 "deterioration",
-                "Point bas de trésorerie à venir",
-                f"Le niveau de trésorerie pourrait descendre vers {_format_mad(forecast_metrics.min_balance_30d)}.",
-                f"Écart potentiel d'environ {_format_mad(max(0, gap))} par rapport au solde actuel.",
-                "Planifier les encaissements et reports de paiement avant la semaine de tension.",
+                get_bi_translation("alerts.forecast_low_title", locale),
+                get_bi_translation("alerts.forecast_low_desc", locale, min_balance=_format_mad(forecast_metrics.min_balance_30d)),
+                get_bi_translation("alerts.forecast_low_impact", locale, amount=_format_mad(max(0, gap))),
+                get_bi_translation("alerts.forecast_low_action", locale),
                 7,
             )
 
@@ -543,10 +564,10 @@ class BusinessIntelligenceService:
             add(
                 "Low",
                 "opportunity",
-                "Opportunité : optimiser l'excédent de trésorerie",
-                f"Trésorerie de {_format_mad(balance)} avec génération de cash positive.",
-                "Améliorer le rendement du cash excédentaire sans fragiliser les opérations.",
-                "Définir une réserve opérationnelle minimale et allouer le surplus (remboursement dette, placement court terme).",
+                get_bi_translation("alerts.opportunity_title", locale),
+                get_bi_translation("alerts.opportunity_desc", locale, balance=_format_mad(balance)),
+                get_bi_translation("alerts.opportunity_impact", locale),
+                get_bi_translation("alerts.opportunity_action", locale),
                 8,
             )
 
@@ -554,10 +575,10 @@ class BusinessIntelligenceService:
             add(
                 "Low",
                 "governance",
-                "Pilotage régulier recommandé",
-                "Aucun signal critique immédiat ; maintenir la visibilité hebdomadaire.",
-                "Préserver la capacité de réaction de la direction.",
-                "Tenir une revue trésorerie hebdomadaire avec les 5 plus gros flux entrants et sortants.",
+                get_bi_translation("alert_title", locale),
+                get_bi_translation("alert_desc", locale),
+                get_bi_translation("alert_impact", locale),
+                get_bi_translation("alert_action", locale),
                 9,
             )
 
@@ -577,24 +598,24 @@ class BusinessIntelligenceService:
 
         if "liquidity" in title_l or "liquidité" in title_l:
             if avg_net < 0:
-                return f"Jusqu'à {_format_mad(abs(avg_net) * min(runway['days'], 30))} de tension sur 30 jours."
-            return f"Réserve actuelle {_format_mad(balance)} pour {runway['months']} mois au rythme actuel."
+                return _format_mad(abs(avg_net) * min(runway["days"], 30))
+            return _format_mad(balance)
 
         if "cashflow" in title_l or "cash" in title_l:
-            return f"Érosion potentielle de {_format_mad(abs(avg_net) * 30)} par mois."
+            return _format_mad(abs(avg_net) * 30)
 
         if "expense" in title_l or "dépense" in title_l or "inflation" in title_l:
             spike = max(0, ratios["last_outflows"] - ratios["prior_outflows"])
-            return f"Surcoût estimé {_format_mad(spike)} sur 30 jours."
+            return _format_mad(spike)
 
         if "revenue" in title_l or "encaissement" in title_l:
             drop = max(0, ratios["prior_inflows"] - ratios["last_inflows"])
-            return f"Manque de trésorerie estimé {_format_mad(drop)} vs période précédente."
+            return _format_mad(drop)
 
         if "volatility" in title_l or "volatilité" in title_l:
-            return f"Variabilité des flux autour de {_format_mad(ratios['daily_volatility'])} par jour."
+            return _format_mad(ratios["daily_volatility"])
 
-        return f"Exposition liée au solde de {_format_mad(balance)} et aux flux récents."
+        return _format_mad(balance)
 
     def _top_risks(
         self,
@@ -603,18 +624,19 @@ class BusinessIntelligenceService:
         context: dict,
         ratios: dict,
         runway: dict,
-        locale: str = "fr",
+        locale: str
     ) -> list[dict[str, Any]]:
         risks: list[dict[str, Any]] = []
         seen_titles: set[str] = set()
 
+        from app.utils.locale_content import normalize_risk_intelligence, normalize_risk_entry
         risk_intelligence = normalize_risk_intelligence(risk_intelligence, locale)
         for risk in risk_intelligence.get("top_risks", [])[:3]:
-            title = risk.get("title", "Risque de trésorerie")
+            title = risk.get("title", get_bi_translation("risks.default_title", locale))
             if title in seen_titles:
                 continue
             seen_titles.add(title)
-            severity_score = risk.get("severity_score") or _risk_penalty(risk.get("probability", "Moyenne"))
+            severity_score = risk.get("severity_score") or _risk_penalty(risk.get("probability", "medium"))
             if isinstance(severity_score, str):
                 severity_score = _risk_penalty(severity_score)
             risks.append(
@@ -622,12 +644,12 @@ class BusinessIntelligenceService:
                     {
                         "title": title,
                         "severity": _severity_from_score(float(severity_score)),
-                        "probability": risk.get("probability", "Moyenne"),
+                        "probability": get_bi_translation("risks.high_probability", locale) if severity_score >= 60 else get_bi_translation("risks.medium_probability", locale),
                         "estimated_financial_impact": self._estimate_financial_impact(
                             title, context, ratios, runway
                         ),
                         "impact": risk.get("impact", risk.get("business_impact", "")),
-                        "urgency": risk.get("urgency", "Sous 30 jours"),
+                        "urgency": get_bi_translation("urgency.30", locale),
                         "recommended_action": risk.get("recommended_action", ""),
                     },
                     locale,
@@ -646,14 +668,14 @@ class BusinessIntelligenceService:
                     {
                         "title": title,
                         "severity": alert["severity"],
-                        "probability": "Élevée"
+                        "probability": get_bi_translation("risks.high_probability", locale)
                         if alert["severity"] in {"Critical", "High", "Critique", "Élevée"}
-                        else "Moyenne",
+                        else get_bi_translation("risks.medium_probability", locale),
                         "estimated_financial_impact": alert.get("business_impact", ""),
                         "impact": alert.get("business_impact", ""),
-                        "urgency": "Immédiat"
+                        "urgency": get_bi_translation("risks.immediate_urgency", locale)
                         if alert["severity"] in {"Critical", "Critique"}
-                        else "Sous 30 jours",
+                        else get_bi_translation("urgency.30", locale),
                         "recommended_action": alert.get("recommended_action", ""),
                     },
                     locale,
@@ -667,6 +689,7 @@ class BusinessIntelligenceService:
         context: dict,
         runway: dict,
         ratios: dict,
+        locale: str
     ) -> list[dict[str, Any]]:
         decisions: list[dict[str, Any]] = []
         for rec in recommendations[:3]:
@@ -675,20 +698,20 @@ class BusinessIntelligenceService:
                 {
                     "action": action,
                     "expected_benefit": rec.get("expected_impact") or rec.get("business_impact", ""),
-                    "urgency": rec.get("priority", "Moyenne"),
+                    "urgency": rec.get("priority", get_bi_translation("probability.medium", locale)),
                     "business_justification": rec.get("why") or rec.get("reasoning", ""),
-                    "time_horizon": rec.get("time_horizon", "Next 30 days"),
+                    "time_horizon": rec.get("time_horizon", get_bi_translation("urgency.30", locale)),
                 }
             )
 
         if not decisions:
             decisions.append(
                 {
-                    "action": "Instaurer une revue trésorerie hebdomadaire",
-                    "expected_benefit": "Détecter plus tôt les tensions et prioriser les encaissements.",
-                    "urgency": "Faible",
-                    "business_justification": f"Autonomie estimée à {runway['months']} mois — le pilotage régulier sécurise cette position.",
-                    "time_horizon": "Prochains 30 jours",
+                    "action": get_bi_translation("decisions.default_action", locale),
+                    "expected_benefit": get_bi_translation("decisions.default_benefit", locale),
+                    "urgency": get_bi_translation("probability.low", locale),
+                    "business_justification": get_bi_translation("decisions.default_justification", locale, months=runway["months"]),
+                    "time_horizon": get_bi_translation("decisions.default_horizon", locale),
                 }
             )
         return decisions
@@ -709,10 +732,11 @@ class BusinessIntelligenceService:
         top_risks: list[dict],
         decisions: list[dict],
         prediction_drivers: list[dict] = None,
+        locale: str
     ) -> dict[str, Any]:
         if prediction_drivers is None:
             prediction_drivers = []
-            
+
         balance = float(context.get("treasury_balance") or 0)
         avg_net = float(context.get("avg_30d_cashflow") or 0)
         top_risk = top_risks[0] if top_risks else {}
@@ -724,35 +748,35 @@ class BusinessIntelligenceService:
             main_rec,
         )
         if avg_net >= 0 and balance > 0:
-            opp_title = "Renforcer la valeur de l'excédent de trésorerie"
-            opp_desc = (
-                f"Avec {_format_mad(balance)} en caisse et des encaissements qui couvrent le rythme de dépenses, "
-                "la direction peut structurer une réserve minimale et utiliser le surplus."
-            )
-            opp_benefit = opportunity_rec.get("expected_impact") or "Améliorer le rendement du cash sans fragiliser les opérations."
+            opp_title = get_bi_translation("briefing.surplus_opportunity_title", locale)
+            opp_desc = get_bi_translation("briefing.surplus_opportunity_desc", locale, balance=_format_mad(balance))
+            opp_benefit = opportunity_rec.get("expected_impact") or get_bi_translation("decision_outcome", locale)
         else:
-            opp_title = "Accélérer les encaissements confirmés"
-            opp_desc = (
-                f"Prioriser les relances sur les créances ouvertes pour compenser la consommation de "
-                f"{_format_mad(abs(avg_net))} par jour."
-            )
-            opp_benefit = "Réduire la pression sur la trésorerie dans les 30 prochains jours."
+            opp_title = get_bi_translation("briefing.deficit_opportunity_title", locale)
+            opp_desc = get_bi_translation("briefing.deficit_opportunity_desc", locale, avg_net=_format_mad(abs(avg_net)))
+            opp_benefit = get_bi_translation("briefing.deficit_opportunity_benefit", locale)
 
         deterministic = {
-            "executive_summary": (
-                f"Trésorerie à {_format_mad(balance)} — santé {health['score']}/100, "
-                f"résilience {resilience['score']}/100, autonomie estimée {runway['months']} mois. "
-                f"Risque principal : {top_risk.get('title', 'à surveiller')}. "
-                f"Décision prioritaire : {top_decision.get('action', 'revue trésorerie hebdomadaire')}."
+            "executive_summary": get_bi_translation(
+                "summary",
+                locale,
+                balance=_format_mad(balance),
+                health=health["score"],
+                resilience=resilience["score"],
+                runway_months=runway["months"],
+                risk_title=top_risk.get("title", get_bi_translation("main_risk_title", locale)),
+                decision_action=top_decision.get("action", get_bi_translation("decision_action", locale))
             ),
-            "financial_situation": (
-                f"Sur les 30 derniers jours : encaissements {_format_mad(ratios['last_inflows'])}, "
-                f"dépenses {_format_mad(ratios['last_outflows'])}, flux net {_format_mad(ratios['last_net'])}. "
-                f"Flux journalier moyen : {_format_mad(avg_net)}. "
-                f"Évolution de la trésorerie : {context.get('trend', 'stable')}."
+            "financial_situation": get_bi_translation(
+                "financial",
+                locale,
+                inflows=_format_mad(ratios["last_inflows"]),
+                outflows=_format_mad(ratios["last_outflows"]),
+                net=_format_mad(ratios["last_net"]),
+                trend=context.get("trend", "stable")
             ),
             "main_risk": {
-                "title": top_risk.get("title", "Risque de trésorerie"),
+                "title": top_risk.get("title", get_bi_translation("main_risk_title", locale)),
                 "description": top_risk.get("impact") or top_risk.get("recommended_action", ""),
                 "severity": top_risk.get("severity", "Medium"),
                 "estimated_financial_impact": top_risk.get("estimated_financial_impact", ""),
@@ -762,18 +786,22 @@ class BusinessIntelligenceService:
                 "description": opp_desc,
                 "potential_benefit": opp_benefit,
             },
-            "cash_position_analysis": (
-                f"Solde actuel {_format_mad(balance)}. "
-                f"{runway['interpretation']} "
-                f"Résilience : {resilience['label']} ({resilience['score']}/100)."
+            "cash_position_analysis": get_bi_translation(
+                "cash",
+                locale,
+                months=runway["months"],
+                label=resilience["label"],
+                score=resilience["score"]
             ),
-            "outlook_30_days": (
-                f"Sur 30 jours : point bas attendu autour de {_format_mad(forecast_metrics.min_balance_30d)}, "
-                f"tendance {forecast_metrics.trend}. "
-                f"Niveau de risque global : {risk_summary.get('global_risk_level', 'LOW')}."
+            "outlook_30_days": get_bi_translation(
+                "outlook",
+                locale,
+                min_balance=_format_mad(forecast_metrics.min_balance_30d),
+                trend=forecast_metrics.trend,
+                risk_level=_risk_level({"top_risks": top_risks})
             ),
             "recommended_decision": {
-                "action": top_decision.get("action", "Piloter la trésorerie en comité de direction"),
+                "action": top_decision.get("action", get_bi_translation("briefing.default_decision_action", locale)),
                 "rationale": top_decision.get("business_justification", ""),
                 "expected_outcome": top_decision.get("expected_benefit", ""),
                 "urgency": top_decision.get("urgency", "Medium"),
@@ -783,7 +811,7 @@ class BusinessIntelligenceService:
                 {
                     "action": top_decision.get("action", ""),
                     "why": top_decision.get("business_justification", ""),
-                    "deadline": top_decision.get("time_horizon", "Cette semaine"),
+                    "deadline": top_decision.get("time_horizon", get_bi_translation("deadline", locale)),
                 }
             ],
         }
@@ -795,7 +823,7 @@ class BusinessIntelligenceService:
                 {
                     "action": rec.get("recommended_action") or rec.get("title", ""),
                     "why": rec.get("why") or rec.get("reasoning", ""),
-                    "deadline": rec.get("time_horizon", "30 jours"),
+                    "deadline": rec.get("time_horizon", get_bi_translation("briefing.default_decision_horizon", locale)),
                 }
             )
 
@@ -858,10 +886,28 @@ class BusinessIntelligenceService:
                 {
                     "action": a.get("action", ""),
                     "why": a.get("pourquoi", ""),
-                    "deadline": "30 jours",
+                    "deadline": get_bi_translation("briefing.default_decision_horizon", locale),
                 }
                 for a in raw_executive["actions_prioritaires"]
             ]
 
         merged["executive_briefing"] = merged["executive_summary"]
         return merged
+
+
+def _risk_level(payload: dict) -> str:
+    for path in (
+        ("executive_briefing", "main_risk", "severity"),
+        ("top_risks", 0, "severity"),
+    ):
+        cur = payload
+        for part in path:
+            if isinstance(part, int):
+                cur = cur[part] if isinstance(cur, list) and len(cur) > part else None
+            else:
+                cur = cur.get(part) if isinstance(cur, dict) else None
+            if cur is None:
+                break
+        if cur:
+            return str(cur)
+    return "LOW"

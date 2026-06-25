@@ -18,7 +18,8 @@
     "today": "اليوم",
     "continue": "متابعة",
     "creating": "جاري الإنشاء…",
-    "close": "إغلاق"
+    "close": "إغلاق",
+    "date": "التاريخ"
   },
   "app": {
     "name": "خزينة الشركات الصغيرة والمتوسطة",
@@ -206,7 +207,18 @@
     "forecastRisks": "مخاطر التوقع",
     "forecastRecommendations": "توصيات التوقع",
     "noRisks": "لا توجد مخاطر محددة حالياً.",
-    "noRecommendations": "لا توجد توصيات حالياً."
+    "noRecommendations": "لا توجد توصيات حالياً.",
+    "healthyCash": "نقدية صحية",
+    "watchRequired": "مطلوب مراقبة",
+    "stable": "مستقر",
+    "currentShort": "الحالي",
+    "projection": "التوقع",
+    "forecastHorizon": "أفق التوقع",
+    "currentLevel": "المستوى الحالي",
+    "amount": "المبلغ",
+    "confidenceInterval": "فاصل الثقة",
+    "liveData": "بيانات مباشرة",
+    "basedOnDays": "بناءً على {{days}} يوم"
   },
   "upload": {
     "disabled": "الرفع معطل",
@@ -248,6 +260,8 @@
     "colRecords": "السجلات",
     "colStatus": "الحالة",
     "colActions": "الإجراءات",
+    "colType": "النوع",
+    "colPeriod": "الفترة",
     "viewDetails": "عرض التفاصيل",
     "modalTitle": "تفاصيل الرفع",
     "fileInfo": "معلومات الملف",
@@ -264,14 +278,28 @@
     "recommendations": "التوصيات",
     "noLineage": "لا توجد بيانات تتبع متاحة",
     "loadingLineage": "جاري تحميل التتبع…",
+    "rowsProcessed": "الصفوف المعالجة",
+    "rowsInserted": "الصفوف المُدرجة",
+    "rowsUpdated": "الصفوف المُحدَثة",
+    "duplicatesSkipped": "المتكررات المُتجاهلة",
+    "lastKnownDate": "آخر تاريخ معروف",
+    "businessImpact": "الأثر التجاري",
+    "historyEnriched": "تم إثراء التاريخ ب {{count}} ملاحظات جديدة.",
+    "treasuryMemoryNowCovers": "تغطي ذاكرة الخزينة الآن {{count}} أشهر.",
+    "forecastsAutomaticallyUpdated": "تم تحديث التوقعات تلقائياً.",
+    "typeInitialHistory": "تاريخ أولي",
+    "typePartialUpdate": "تحديث جزئي",
+    "typeMonthlyUpdate": "تحديث شهري",
+    "rowsLabel": "صفوف",
+    "yes": "نعم",
+    "no": "لا",
     "status": {
       "completed": "مكتمل",
       "processing": "قيد المعالجة",
       "failed": "فشل",
       "pending": "قيد الانتظار"
     }
-  }
-,
+  },
   "reports": {
     "title": "التقرير التنفيذي",
     "subtitle": "التسليم الإداري — الصحة والمخاطر والقرارات وخطة العمل",

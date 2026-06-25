@@ -1,6 +1,10 @@
 import axios from "axios";
 import { getStoredLanguage } from "../i18n/i18n";
 
+// Simple in-memory cache
+const cache = new Map();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
 const API = axios.create({
   baseURL: import.meta.env.VITE_API_URL || "http://127.0.0.1:8000"
 });
@@ -17,9 +21,39 @@ API.interceptors.request.use((config) => {
   return config;
 });
 
-// Redirige vers /login si token expiré
+// Add caching for GET requests
+API.interceptors.request.use((config) => {
+  // Only cache GET requests
+  if (config.method !== "get") {
+    return config;
+  }
+
+  const cacheKey = `${config.url}__${JSON.stringify(config.params || {})}`;
+  const cached = cache.get(cacheKey);
+
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    // Return cached response as a resolved promise
+    return {
+      ...config,
+      adapter: () => Promise.resolve(cached.response),
+    };
+  }
+
+  return config;
+});
+
+// Cache responses
 API.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    if (response.config.method === "get") {
+      const cacheKey = `${response.config.url}__${JSON.stringify(response.config.params || {})}`;
+      cache.set(cacheKey, {
+        response,
+        timestamp: Date.now(),
+      });
+    }
+    return response;
+  },
   (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem("token");
@@ -29,5 +63,10 @@ API.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+// Function to clear the cache manually (e.g., after an upload)
+export const clearAPICache = () => {
+  cache.clear();
+};
 
 export default API;

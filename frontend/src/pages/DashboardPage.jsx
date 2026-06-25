@@ -1,23 +1,24 @@
-import { useEffect, useState } from "react";
-import API from "../services/api";
-import { analyticsService } from "../services/analyticsService";
-import { ensureArray, safeGet } from "../utils/safeDataAccess";
-import { useAuth } from "../hooks/useAuth";
-import TreasuryMemoryCard from "../components/TreasuryMemoryCard";
-import BusinessIntelligenceSection from "../components/BusinessIntelligenceSection";
-import DecisionCenterSummary from "../components/DecisionCenterSummary";
-import ForecastChart from "../components/ForecastChart";
-import OnboardingStatusCard from "../components/OnboardingStatusCard";
-import UpgradeBanner from "../components/UpgradeBanner";
-import UploadZone from "../components/UploadZone";
-import NotificationCenter from "../components/NotificationCenter";
-import { useNotificationShell } from "../contexts/NotificationShellContext";
-import { notificationService } from "../services/notificationService";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import { Alert, AlertDescription } from "../components/ui/alert";
-import { Badge } from "../components/ui/badge";
+import { useEffect, useState } from 'react';
+import API from '../services/api';
+import { analyticsService } from '../services/analyticsService';
+import { ensureArray, safeGet } from '../utils/safeDataAccess';
+import { useAuth } from '../hooks/useAuth';
+import TreasuryMemoryCard from '../components/TreasuryMemoryCard';
+import BusinessIntelligenceSection from '../components/BusinessIntelligenceSection';
+import DecisionCenterSummary from '../components/DecisionCenterSummary';
+import ForecastChart from '../components/ForecastChart';
+import OnboardingStatusCard from '../components/OnboardingStatusCard';
+import UpgradeBanner from '../components/UpgradeBanner';
+import UploadZone from '../components/UploadZone';
+import NotificationCenter from '../components/NotificationCenter';
+import { useNotificationShell } from '../contexts/NotificationShellContext';
+import { notificationService } from '../services/notificationService';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Alert, AlertDescription } from '../components/ui/alert';
+import { Badge } from '../components/ui/badge';
+import { useTranslation } from '@/i18n/LanguageProvider';
 
 export default function DashboardPage() {
   const { user, createCompany } = useAuth();
@@ -29,23 +30,18 @@ export default function DashboardPage() {
   const [analyzedAt, setAnalyzedAt] = useState(null);
   const [onboarding, setOnboarding] = useState(false);
   const [subscription, setSubscription] = useState(null);
-  const [subscriptionLoading, setSubscriptionLoading] = useState(true); // <-- new
+  const [subscriptionLoading, setSubscriptionLoading] = useState(true);
   const [upgrading, setUpgrading] = useState(false);
   const [error, setError] = useState(null);
-  const [companyForm, setCompanyForm] = useState({ name: "", sector: "", city: "" });
+  const [companyForm, setCompanyForm] = useState({ name: '', sector: '', city: '' });
   const [creatingCompany, setCreatingCompany] = useState(false);
   const [treasuryProfile, setTreasuryProfile] = useState(null);
   const { openCenter, openNotificationCenter, closeNotificationCenter } = useNotificationShell();
+  const { t, formatDate } = useTranslation();
 
   useEffect(() => {
     fetchAllData();
   }, []);
-
-  function formatDateTime(dateStr) {
-    if (!dateStr) return "";
-    const date = new Date(dateStr);
-    return date.toLocaleString("fr-FR");
-  }
 
   useEffect(() => {
     if (hasData || businessIntelligence) {
@@ -62,7 +58,7 @@ export default function DashboardPage() {
       await fetchTreasuryProfile();
     } catch (err) {
       console.error(err);
-      setError("Erreur lors du chargement des données");
+      setError(t('dashboard.loadError'));
     } finally {
       setLoading(false);
     }
@@ -70,10 +66,10 @@ export default function DashboardPage() {
 
   const fetchTreasuryProfile = async () => {
     try {
-      const res = await API.get("/upload/treasury-profile");
+      const res = await API.get('/upload/treasury-profile');
       setTreasuryProfile(res.data.profile);
     } catch (err) {
-      console.error("Failed to fetch treasury profile:", err);
+      console.error('Failed to fetch treasury profile:', err);
       setTreasuryProfile(null);
     }
   };
@@ -83,7 +79,7 @@ export default function DashboardPage() {
       setSubscriptionLoading(true);
       setSubscription(await analyticsService.getSubscription());
     } catch (err) {
-      console.warn("Could not fetch subscription:", err);
+      console.warn('Could not fetch subscription:', err);
     } finally {
       setSubscriptionLoading(false);
     }
@@ -91,11 +87,11 @@ export default function DashboardPage() {
 
   const fetchFromMongo = async () => {
     try {
-      const latestRes = await API.get("/analytics/latest-analysis");
+      const latestRes = await API.get('/analytics/latest-analysis');
 
       if (latestRes.data.onboarding || !latestRes.data.has_real_data) {
-        const onboardingInfo = safeGet(latestRes.data, "onboarding_info", {
-          status: "NO_DATA",
+        const onboardingInfo = safeGet(latestRes.data, 'onboarding_info', {
+          status: 'NO_DATA',
           historical_months: 0,
           forecasting_enabled: false,
         });
@@ -105,8 +101,8 @@ export default function DashboardPage() {
         return;
       }
 
-      const kpisData = safeGet(latestRes.data, "kpis", {});
-      const onboardingInfo = safeGet(latestRes.data, "onboarding_info", null);
+      const kpisData = safeGet(latestRes.data, 'kpis', {});
+      const onboardingInfo = safeGet(latestRes.data, 'onboarding_info', null);
       if (onboardingInfo) {
         kpisData.onboarding_info = onboardingInfo;
       }
@@ -114,35 +110,33 @@ export default function DashboardPage() {
       setHasData(true);
       setOnboarding(false);
       setKpis(kpisData);
-      setForecast(ensureArray(safeGet(latestRes.data, "forecast", [])));
-      setBusinessIntelligence(safeGet(latestRes.data, "business_intelligence", null));
-      setAnalyzedAt(safeGet(latestRes.data, "analyzed_at", null));
+      setForecast(ensureArray(safeGet(latestRes.data, 'forecast', [])));
+      setBusinessIntelligence(safeGet(latestRes.data, 'business_intelligence', null));
+      setAnalyzedAt(safeGet(latestRes.data, 'analyzed_at', null));
     } catch (err) {
-      console.error("Could not fetch latest analysis:", err);
+      console.error('Could not fetch latest analysis:', err);
       setHasData(false);
       setOnboarding(true);
     }
   };
 
   const handleUploadSuccess = async (uploadData) => {
-    // Rely on the background upload pipeline to retrain forecasts.
-    // The dashboard should only refresh data; do not trigger training here to avoid duplicates.
     await fetchAllData();
   };
 
   const handleUpgrade = async () => {
     setUpgrading(true);
     try {
-      await API.post("/billing/upgrade");
+      await API.post('/billing/upgrade');
       await fetchSubscription();
       await fetchAllData();
     } catch (err) {
-      console.error("Upgrade failed:", err);
+      console.error('Upgrade failed:', err);
       await notificationService.createNotification({
-        notification_type: "warning",
-        severity: "high",
-        title: "Mise à jour échouée",
-        message: err?.message || String(err) || "La mise à jour a échoué",
+        notification_type: 'warning',
+        severity: 'high',
+        title: t('subscription.upgradeFailed'),
+        message: t('dashboard.loadError'),
       });
       openNotificationCenter();
     } finally {
@@ -157,17 +151,17 @@ export default function DashboardPage() {
     try {
       await createCompany(
         companyForm.name,
-        companyForm.sector || "Services",
-        companyForm.city || "Casablanca"
+        companyForm.sector || 'Services',
+        companyForm.city || 'Casablanca'
       );
       await fetchAllData();
     } catch (err) {
       console.error(err);
       await notificationService.createNotification({
-        notification_type: "warning",
-        severity: "high",
-        title: "Échec de la création de l'entreprise",
-        message: err?.message || String(err) || "Impossible de créer l'entreprise",
+        notification_type: 'warning',
+        severity: 'high',
+        title: t('company.createFailed'),
+        message: t('dashboard.loadError'),
       });
       openNotificationCenter();
     } finally {
@@ -176,8 +170,8 @@ export default function DashboardPage() {
   };
 
   const isFreePlan =
-    subscription?.plan?.code === "free_trial" ||
-    subscription?.plan?.name?.toLowerCase().includes("free");
+    subscription?.plan?.code === 'free_trial' ||
+    subscription?.plan?.name?.toLowerCase().includes('free');
   const uploadLimitReached =
     isFreePlan &&
     subscription?.usage?.uploads_used >= (subscription?.plan?.max_uploads ?? 1);
@@ -188,10 +182,10 @@ export default function DashboardPage() {
         <Card className="w-full max-w-lg border-border shadow-sm">
           <CardHeader>
             <CardTitle className="text-2xl font-semibold">
-              Créer votre entreprise
+              {t('company.createTitle')}
             </CardTitle>
             <CardDescription>
-              Commencez par créer votre compte
+              {t('company.createSubtitle')}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -199,21 +193,21 @@ export default function DashboardPage() {
               <div className="space-y-2">
                 <Input
                   required
-                  placeholder="Nom de l'entreprise"
+                  placeholder={t('company.name')}
                   value={companyForm.name}
                   onChange={(e) => setCompanyForm((f) => ({ ...f, name: e.target.value }))}
                 />
               </div>
               <div className="space-y-2">
                 <Input
-                  placeholder="Secteur d'activité"
+                  placeholder={t('company.sector')}
                   value={companyForm.sector}
                   onChange={(e) => setCompanyForm((f) => ({ ...f, sector: e.target.value }))}
                 />
               </div>
               <div className="space-y-2">
                 <Input
-                  placeholder="Ville"
+                  placeholder={t('company.city')}
                   value={companyForm.city}
                   onChange={(e) => setCompanyForm((f) => ({ ...f, city: e.target.value }))}
                 />
@@ -223,7 +217,7 @@ export default function DashboardPage() {
                 disabled={creatingCompany}
                 className="w-full"
               >
-                {creatingCompany ? "Création en cours..." : "Continuer"}
+                {creatingCompany ? t('common.creating') : t('common.continue')}
               </Button>
             </form>
           </CardContent>
@@ -233,85 +227,81 @@ export default function DashboardPage() {
   }
 
   if (onboarding) {
-    const onboardingInfo = safeGet(kpis, "onboarding_info", {
-      status: "NO_DATA",
+    const onboardingInfo = safeGet(kpis, 'onboarding_info', {
+      status: 'NO_DATA',
       historical_months: 0,
       forecasting_enabled: false,
     });
 
     return (
       <div className="mx-auto max-w-4xl space-y-8 py-8">
-        {/* SECTION 1 — Titre */}
         <div className="space-y-2 text-center">
           <h1 className="text-2xl font-semibold tracking-tight">
-            Commencez à utiliser l'outil
+            {t('onboarding.titleNoData')}
           </h1>
           <p className="text-sm text-muted-foreground">
-            Importez vos données pour commencer
+            {t('onboarding.msgNoData')}
           </p>
         </div>
 
-        {/* SECTION 2 — Onboarding Status */}
         <OnboardingStatusCard
           onboardingInfo={onboardingInfo}
           treasuryProfile={treasuryProfile}
         />
 
-        {/* SECTION 3 — Upload Zone */}
         <Card className="border-border">
           <CardHeader>
             <CardTitle className="text-lg font-semibold">
-              Importer vos données
+              {t('upload.dropTitle')}
             </CardTitle>
             <CardDescription>
-              Ajoutez votre historique de trésorerie
+              {t('upload.dropHint')}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <UploadZone
               onUploadSuccess={handleUploadSuccess}
               disabled={uploadLimitReached}
-              disabledMessage="Limite d'imports gratuits atteinte"
+              disabledMessage={t('dashboard.uploadLimitFree')}
               treasuryProfile={treasuryProfile}
             />
           </CardContent>
         </Card>
 
-        {/* Features Grid */}
         <div className="grid gap-4 md:grid-cols-3">
           <Card className="border-border">
             <CardHeader>
               <CardTitle className="text-base font-semibold">
-                Analyse financière
+                {t('dashboard.featureAnalysisTitle')}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground">
-                Obtenez une analyse complète de votre santé financière
+                {t('dashboard.featureAnalysisBody')}
               </p>
             </CardContent>
           </Card>
           <Card className="border-border">
             <CardHeader>
               <CardTitle className="text-base font-semibold">
-                Prévisions de trésorerie
+                {t('dashboard.featureForecastTitle')}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground">
-                Projetez vos flux futurs pour anticiper les risques
+                {t('dashboard.featureForecastBody')}
               </p>
             </CardContent>
           </Card>
           <Card className="border-border">
             <CardHeader>
               <CardTitle className="text-base font-semibold">
-                Décisions stratégiques
+                {t('dashboard.featureDecisionsTitle')}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground">
-                Recevez des recommandations pour optimiser votre trésorerie
+                {t('dashboard.featureDecisionsBody')}
               </p>
             </CardContent>
           </Card>
@@ -322,44 +312,42 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-8">
-      {/* SECTION 1 — Dashboard Header */}
       <div className="space-y-1">
         <h1 className="text-2xl font-semibold tracking-tight">
-          Tableau de bord
+          {t('nav.dashboard')}
         </h1>
         <p className="text-sm text-muted-foreground">
-          Vue d'ensemble de votre trésorerie
+          {t('dashboard.subtitle')}
         </p>
         {hasData && analyzedAt && (
           <p className="text-xs text-muted-foreground">
-            Analysé le {formatDateTime(analyzedAt)}
+          {t('dashboard.analyzedAt', { date: formatDate(analyzedAt) })}
           </p>
         )}
       </div>
 
-      {/* SECTION 2 — Upload / Onboarding Zone */}
       <Card className="border-border">
         <CardHeader>
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="space-y-1">
               <CardTitle className="text-lg font-semibold">
-                Importer des données
+                {t('upload.dropTitle')}
               </CardTitle>
               <CardDescription>
-                Mettez à jour votre historique de trésorerie
+                {t('upload.dropHint')}
               </CardDescription>
             </div>
             {subscription && (
               <div className="flex flex-wrap items-center gap-3">
                 <Badge
-                  variant={isFreePlan ? "secondary" : "default"}
+                  variant={isFreePlan ? 'secondary' : 'default'}
                   className="text-xs"
                 >
-                  {subscription.plan?.name || "Essai gratuit"}
+                  {subscription.plan?.name || t('subscription.freeTrial')}
                 </Badge>
                 {isFreePlan && (
                   <span className="text-xs text-muted-foreground">
-                    {subscription.usage?.uploads_used || 0} / {subscription.plan?.max_uploads || 1} import(s)
+                    {t('subscription.uploadsUsed', { used: subscription.usage?.uploads_used || 0, max: subscription.plan?.max_uploads || 1 })}
                   </span>
                 )}
               </div>
@@ -370,7 +358,7 @@ export default function DashboardPage() {
           <UploadZone
             onUploadSuccess={handleUploadSuccess}
             disabled={uploadLimitReached}
-            disabledMessage="Limite d'imports gratuits atteinte"
+            disabledMessage={t('dashboard.uploadLimitFree')}
             treasuryProfile={treasuryProfile}
           />
         </CardContent>
@@ -388,7 +376,7 @@ export default function DashboardPage() {
         <Alert variant="destructive">
           <AlertDescription className="flex items-center justify-between">
             <div>
-              <p className="font-medium">Erreur de chargement</p>
+              <p className="font-medium">{t('dashboard.loadErrorTitle')}</p>
               <p className="text-sm">{error}</p>
             </div>
             <Button
@@ -396,7 +384,7 @@ export default function DashboardPage() {
               size="sm"
               onClick={fetchAllData}
             >
-              Réessayer
+              {t('common.retry')}
             </Button>
           </AlertDescription>
         </Alert>
@@ -404,71 +392,67 @@ export default function DashboardPage() {
 
       {loading && (
         <div className="py-8 text-center text-sm text-muted-foreground">
-          Chargement des données...
+          {t('dashboard.loadingData')}
         </div>
       )}
 
       {!loading && !onboarding && (
         <>
           <TreasuryMemoryCard profile={treasuryProfile} />
-          {safeGet(kpis, "onboarding_info") && (
+          {safeGet(kpis, 'onboarding_info') && (
             <OnboardingStatusCard
-              onboardingInfo={safeGet(kpis, "onboarding_info")}
+              onboardingInfo={safeGet(kpis, 'onboarding_info')}
               treasuryProfile={treasuryProfile}
             />
           )}
 
-          {/* SECTION 3 — Business Intelligence */}
           <BusinessIntelligenceSection intelligence={businessIntelligence} />
 
-          {/* SECTION 4 — Forecast */}
-          {safeGet(kpis, "onboarding_info.forecasting_enabled", true) ? (
+          {safeGet(kpis, 'onboarding_info.forecasting_enabled', true) ? (
             <Card className="border-border">
               <CardHeader>
                 <CardTitle className="text-lg font-semibold">
-                  Prévisions de trésorerie
+                  {t('forecast.title')}
                 </CardTitle>
                 <CardDescription>
-                  Projection des flux futurs
+                  {t('forecast.subtitle')}
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <ForecastChart data={forecast} treasuryBalance={safeGet(kpis, "treasury_balance")} />
+                <ForecastChart data={forecast} treasuryBalance={safeGet(kpis, 'treasury_balance')} />
               </CardContent>
             </Card>
           ) : (
             <Alert>
               <AlertDescription>
-                <p className="font-medium">Prévisions désactivées</p>
+                <p className="font-medium">{t('forecastDisabledTitle')}</p>
                 <p className="text-sm text-muted-foreground">
-                  Activez les prévisions pour utiliser cette fonctionnalité
+                  {t('dashboard.forecastDisabledBody')}
                 </p>
               </AlertDescription>
             </Alert>
           )}
 
-          {/* SECTION 5 — Decision Center Summary */}
           <DecisionCenterSummary />
         </>
       )}
 
-      {/* Notification Center Dialog */}
       {openCenter && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <Card className="flex w-full max-w-4xl max-h-[90vh] flex-col overflow-hidden border-border shadow-lg">
             <CardHeader className="border-b">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-lg font-semibold">
-                  Notifications
-                </CardTitle>
+              <CardTitle className="text-lg font-semibold">
+                {t('notifications.center')}
+              </CardTitle>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={closeNotificationCenter}
                 >
-                  Fermer
+                  {t('common.close')}
                 </Button>
-              </div>
+            </div>
             </CardHeader>
             <CardContent className="flex-1 overflow-auto p-0">
               <NotificationCenter />

@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Eye, EyeOff, Lock, Mail, User } from "lucide-react";
+import { useTranslation } from "@/i18n/LanguageProvider";
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -20,13 +21,14 @@ export default function LoginPage() {
     lastName: "",
   });
   const [error, setError] = useState(null);
+  const { t } = useTranslation();
 
   const getErrorMessage = (e) => {
     if (typeof e === "string") return e;
     const detail = e?.response?.data?.detail;
     if (typeof detail === "string") return detail;
     if (Array.isArray(detail)) return detail.map((d) => d.msg).join(", ");
-    return "Erreur inattendue, veuillez réessayer";
+    return t('auth.genericError');
   };
 
   const handleSubmit = async () => {
@@ -62,10 +64,10 @@ export default function LoginPage() {
             </div>
           </div>
           <CardTitle className="text-2xl font-bold tracking-tight">
-            Tresorerie PME
+            {t('app.name')}
           </CardTitle>
           <CardDescription className="text-base">
-            {mode === "login" ? "Connectez-vous à votre compte" : "Créez votre compte"}
+            {mode === "login" ? t('auth.loginTitle') : t('auth.registerTitle')}
           </CardDescription>
         </CardHeader>
         
@@ -74,13 +76,13 @@ export default function LoginPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label htmlFor="firstName" className="text-sm font-medium text-foreground">
-                  Prénom
+                  {t('auth.firstName')}
                 </label>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     id="firstName"
-                    placeholder="Jean"
+                    placeholder={t('auth.firstName')}
                     value={form.firstName}
                     onChange={set("firstName")}
                     className="pl-10"
@@ -89,13 +91,13 @@ export default function LoginPage() {
               </div>
               <div className="space-y-2">
                 <label htmlFor="lastName" className="text-sm font-medium text-foreground">
-                  Nom
+                  {t('auth.lastName')}
                 </label>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     id="lastName"
-                    placeholder="Dupont"
+                    placeholder={t('auth.lastName')}
                     value={form.lastName}
                     onChange={set("lastName")}
                     className="pl-10"
@@ -107,13 +109,13 @@ export default function LoginPage() {
 
           <div className="space-y-2">
             <label htmlFor="email" className="text-sm font-medium text-foreground">
-              Adresse e-mail
+              {t('auth.email')}
             </label>
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 id="email"
-                placeholder="jean.dupont@exemple.com"
+                placeholder={t('auth.email')}
                 type="email"
                 value={form.email}
                 onChange={set("email")}
@@ -125,11 +127,11 @@ export default function LoginPage() {
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <label htmlFor="password" className="text-sm font-medium text-foreground">
-                Mot de passe
+                {t('auth.password')}
               </label>
               {mode === "login" && (
                 <button type="button" className="text-xs text-primary hover:underline font-medium">
-                  Mot de passe oublié ?
+                  {t('auth.password')}
                 </button>
               )}
             </div>
@@ -161,17 +163,17 @@ export default function LoginPage() {
           )}
 
           <Button type="button" onClick={handleSubmit} className="w-full">
-            {mode === "login" ? "Se connecter" : "Créer un compte"}
+            {mode === "login" ? t('auth.login') : t('auth.register')}
           </Button>
 
           <p className="text-center text-sm text-muted-foreground pt-2">
-            {mode === "login" ? "Pas encore de compte ?" : "Déjà un compte ?"}{" "}
+            {mode === "login" ? t('auth.noAccount') : t('auth.hasAccount')}{" "}
             <button
               type="button"
               onClick={() => setMode(mode === "login" ? "register" : "login")}
               className="font-semibold text-primary hover:underline transition-colors"
             >
-              {mode === "login" ? "S'inscrire" : "Se connecter"}
+              {mode === "login" ? t('auth.signUp') : t('auth.signIn')}
             </button>
           </p>
         </CardContent>

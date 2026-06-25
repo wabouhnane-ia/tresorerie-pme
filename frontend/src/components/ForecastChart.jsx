@@ -9,7 +9,7 @@ import {
   YAxis,
   Area,
   AreaChart,
-  Legend,
+  ReferenceArea,
 } from "recharts";
 import { useTranslation } from "../i18n/LanguageProvider";
 import { useTheme } from "../hooks/useTheme";
@@ -28,7 +28,11 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Activity,
-  CircleDashed
+  ShieldCheck,
+  AlertCircle,
+  Landmark,
+  CalendarRange,
+  BarChart4,
 } from "lucide-react";
 
 function ForecastChart({ data, treasuryBalance }) {
@@ -36,17 +40,17 @@ function ForecastChart({ data, treasuryBalance }) {
   const { theme } = useTheme();
   const hasData = Array.isArray(data) && data.length > 0;
 
-  // Couleurs adaptatives au thème pour la ligne de référence
+  // Colors adapted to theme
   const getReferenceLineColors = () => {
     if (theme === 'dark') {
       return {
-        stroke: 'rgba(96, 165, 250, 0.4)', // blue-400 avec transparence
-        labelFill: 'rgba(96, 165, 250, 0.8)',
+        stroke: 'hsl(var(--muted-foreground) / 0.18)',
+        labelFill: 'hsl(var(--muted-foreground) / 0.7)',
       };
     } else {
       return {
-        stroke: 'rgba(71, 85, 105, 0.5)', // slate-600 avec transparence
-        labelFill: 'rgba(51, 65, 85, 0.9)', // slate-700
+        stroke: 'hsl(var(--muted-foreground) / 0.15)',
+        labelFill: 'hsl(var(--muted-foreground) / 0.8)',
       };
     }
   };
@@ -60,8 +64,6 @@ function ForecastChart({ data, treasuryBalance }) {
     return [...data]
       .sort((a, b) => new Date(a.ds).valueOf() - new Date(b.ds).valueOf())
       .map((point, index) => {
-        // Each `yhat` is already the forecasted level (treasury balance) for that date.
-        // Do NOT sum yhat values. Use the yhat (or fallback to current projectedBalance).
         const pointYhat = Number(point.yhat ?? projectedBalance);
         const confidenceLow = point.yhat_lower != null ? Number(point.yhat_lower) : pointYhat * 0.95;
         const confidenceHigh = point.yhat_upper != null ? Number(point.yhat_upper) : pointYhat * 1.05;
@@ -112,7 +114,16 @@ function ForecastChart({ data, treasuryBalance }) {
 
   const trend = getTrend();
   const kpis = getKPIs();
-  const trendColor = trend === "up" ? "hsl(var(--chart-2))" : trend === "down" ? "hsl(var(--chart-1))" : "hsl(var(--primary))";
+  
+  // Calculate trend color based on trend
+  const trendColor =
+    trend === "up"
+      ? "hsl(var(--chart-2))"
+      : trend === "down"
+        ? "hsl(var(--chart-4))"
+        : "hsl(var(--primary))";
+        
+  const primaryColor = "hsl(var(--primary))";
   const trendLabel =
     trend === "up"
       ? t("forecast.trendUp")
@@ -126,6 +137,7 @@ function ForecastChart({ data, treasuryBalance }) {
     return `${String(date.getDate()).padStart(2, "0")}/${String(date.getMonth() + 1).padStart(2, "0")}`;
   };
 
+  // Premium Executive Insight Tooltip
   const CustomTooltip = ({ active, payload }) => {
     if (!active || !payload || !payload.length) return null;
     const dataPoint = payload[0].payload;
@@ -134,70 +146,120 @@ function ForecastChart({ data, treasuryBalance }) {
     const isPositive = variationFromStart >= 0;
 
     return (
-      <div className="rounded-xl border border-border/50 bg-card p-4 shadow-2xl backdrop-blur-sm">
-        <div className="flex items-center gap-2 mb-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
-            <Calendar className="h-4 w-4 text-primary" />
+      <div className="rounded-2xl border border-border/60 bg-card/95 p-5 shadow-2xl backdrop-blur-md">
+        {/* Top Row with Date */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+              <Calendar className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">{t("common.date")}</p>
+              <p className="text-sm font-semibold text-foreground">
+                {formatDate(dataPoint.ds, { 
+                  day: '2-digit', 
+                  month: 'long',
+                  year: 'numeric'
+                })}
+              </p>
+            </div>
           </div>
-          <div>
-            <p className="text-xs font-medium text-muted-foreground">{t("common.date")}</p>
-            <p className="text-sm font-semibold text-foreground">
-              {formatDate(dataPoint.ds, { 
-                day: '2-digit', 
-                month: 'long' 
-              })}
-            </p>
-          </div>
+          <Badge 
+            variant={isPositive ? "default" : "destructive"}
+            className="text-[11px] px-2 py-0.5 rounded-full"
+          >
+            {isPositive ? (
+              <><TrendingUp className="h-3.5 w-3.5 mr-1" /> En hausse</>
+            ) : (
+              <><TrendingDown className="h-3.5 w-3.5 mr-1" /> En baisse</>
+            )}
+          </Badge>
         </div>
         
-        <div className="h-px bg-border/50 my-3" />
+        <Separator className="my-3" />
         
-        <div className="space-y-3">
-          <div className="flex items-center justify-between gap-4">
-            <span className="text-xs font-medium text-muted-foreground">{t("forecast.projectedBalance")}</span>
-            <span className="text-lg font-bold" style={{ color: trendColor }}>
-              {formatMadCompact(dataPoint.projectedBalance)}
-            </span>
-          </div>
-          
-          <div className="flex items-center justify-between gap-4">
-            <span className="text-xs font-medium text-muted-foreground">{t("forecast.currentLevel")}</span>
-            <span className="text-sm font-semibold text-foreground">
-              {formatMadCompact(treasuryBalance)}
-            </span>
-          </div>
-          
-          <div className="flex items-center justify-between gap-4">
-            <span className="text-xs font-medium text-muted-foreground">{t("forecast.variation")}</span>
+        {/* Main Projected Balance */}
+        <div className="mb-4">
+          <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-1.5">
+            {t("forecast.projectedBalance")}
+          </p>
+          <p className="text-2xl font-bold" style={{ color: trendColor }}>
+            {formatMad(dataPoint.projectedBalance)}
+          </p>
+        </div>
+        
+        {/* Key Metrics Grid */}
+        <div className="grid grid-cols-2 gap-4 mb-4">
+          {/* Variation Percentage */}
+          <div className="space-y-1">
+            <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+              {t("forecast.variation")}
+            </p>
             <div className="flex items-center gap-1.5">
               {isPositive ? (
-                <ArrowUpRight className="h-3.5 w-3.5 text-emerald-500" />
+                <ArrowUpRight className="h-4 w-4 text-emerald-500" />
               ) : (
-                <ArrowDownRight className="h-3.5 w-3.5 text-red-500" />
+                <ArrowDownRight className="h-4 w-4 text-red-500" />
               )}
-              <span className={`text-sm font-semibold ${isPositive ? 'text-emerald-500' : 'text-red-500'}`}>
+              <span className={`text-base font-bold ${isPositive ? 'text-emerald-500' : 'text-red-500'}`}>
                 {isPositive ? '+' : ''}{variationPercentFromStart.toFixed(1)}%
               </span>
             </div>
           </div>
           
-          <div className="flex items-center justify-between gap-4">
-            <span className="text-xs font-medium text-muted-foreground">{t("forecast.amount")}</span>
-            <span className={`text-xs font-medium ${isPositive ? 'text-emerald-500' : 'text-red-500'}`}>
-              {isPositive ? '+' : ''}{formatMadCompact(variationFromStart)}
+          {/* Variation Amount */}
+          <div className="space-y-1">
+            <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+              Montant
+            </p>
+            <span className={`text-base font-bold ${isPositive ? 'text-emerald-500' : 'text-red-500'}`}>
+              {isPositive ? '+' : ''}{formatMad(variationFromStart)}
             </span>
           </div>
         </div>
         
+        {/* Reference Level */}
+        <div className="flex items-center justify-between bg-muted/30 p-3 rounded-xl mb-3">
+          <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+            {t("forecast.currentLevel")}
+          </span>
+          <span className="text-sm font-semibold text-foreground">
+            {formatMad(treasuryBalance)}
+          </span>
+        </div>
+        
+        {/* Confidence Interval */}
         {(dataPoint.confidenceLow || dataPoint.confidenceHigh) && (
-          <>
-            <div className="h-px bg-border/50 my-3" />
-            <div className="text-[10px] text-muted-foreground/70 flex items-center gap-1">
-              <Activity className="h-3 w-3" />
-              <span>{t("forecast.confidenceInterval")}</span>
+          <div className="bg-gradient-to-r from-primary/5 to-transparent p-3 rounded-xl border border-primary/10">
+            <div className="flex items-center gap-2 mb-1.5">
+              <ShieldCheck className="h-4 w-4 text-primary" />
+              <span className="text-[11px] font-medium text-primary uppercase tracking-wider">
+                {t("forecast.confidenceInterval")}
+              </span>
             </div>
-          </>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground/70">
+                {formatMadCompact(dataPoint.confidenceLow)}
+              </span>
+              <AlertCircle className="h-3 w-3 text-muted-foreground/50" />
+              <span className="text-muted-foreground/70">
+                {formatMadCompact(dataPoint.confidenceHigh)}
+              </span>
+            </div>
+          </div>
         )}
+      </div>
+    );
+  };
+
+  // Custom current level badge
+  const CurrentLevelBadge = () => {
+    return (
+      <div className="absolute right-5 top-20 bg-card/95 border border-border/60 rounded-lg px-3 py-1.5 shadow-sm backdrop-blur-sm">
+        <div className="flex items-center gap-2">
+          <div className="h-2 w-2 rounded-full" style={{ background: referenceLineColors.stroke }} />
+          <span className="text-xs font-medium text-muted-foreground">Current Treasury</span>
+        </div>
       </div>
     );
   };
@@ -221,14 +283,14 @@ function ForecastChart({ data, treasuryBalance }) {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col items-center justify-center rounded-xl bg-muted/30 py-16 px-8 ring-1 ring-border/50">
-            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-muted/30">
-              <Activity className="h-8 w-8 text-muted-foreground/50" />
+          <div className="flex flex-col items-center justify-center rounded-2xl bg-muted/30 py-20 px-8 ring-1 ring-border/50">
+            <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-3xl bg-muted/30">
+              <Activity className="h-10 w-10 text-muted-foreground/50" />
             </div>
-            <p className="text-sm font-medium text-foreground mb-2 text-center">
+            <p className="text-base font-semibold text-foreground mb-2 text-center">
               {t("forecast.insufficientData")}
             </p>
-            <p className="text-xs text-muted-foreground/70 text-center max-w-sm">
+            <p className="text-sm text-muted-foreground/70 text-center max-w-md">
               {t("forecast.importMore")}
             </p>
           </div>
@@ -239,7 +301,7 @@ function ForecastChart({ data, treasuryBalance }) {
 
   return (
     <Card className="border-border/50 bg-card shadow-xl">
-      {/* SECTION 1 — Premium Header */}
+      {/* Premium Header */}
       <CardHeader className="space-y-4 pb-6">
         <div className="flex items-start justify-between">
           <div className="space-y-2">
@@ -258,24 +320,24 @@ function ForecastChart({ data, treasuryBalance }) {
             </div>
           </div>
           
-          {/* Status Indicator - Discret */}
-          <div className="flex items-center gap-2 rounded-full bg-muted/30 px-3 py-1.5 ring-1 ring-border/50">
+          {/* Status Indicator */}
+          <div className="flex items-center gap-2 rounded-full bg-muted/30 px-4 py-2 ring-1 ring-border/50">
             {trend === "up" && (
               <>
-                <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-xs font-medium text-emerald-500">{t("forecast.healthyCash")}</span>
+                <div className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-xs font-semibold text-emerald-500">{t("forecast.healthyCash")}</span>
               </>
             )}
             {trend === "down" && (
               <>
-                <div className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
-                <span className="text-xs font-medium text-red-500">{t("forecast.watchRequired")}</span>
+                <div className="h-2.5 w-2.5 rounded-full bg-red-500 animate-pulse" />
+                <span className="text-xs font-semibold text-red-500">{t("forecast.watchRequired")}</span>
               </>
             )}
             {trend === "stable" && (
               <>
-                <div className="h-2 w-2 rounded-full bg-blue-500" />
-                <span className="text-xs font-medium text-blue-500">{t("forecast.stable")}</span>
+                <div className="h-2.5 w-2.5 rounded-full bg-blue-500" />
+                <span className="text-xs font-semibold text-blue-500">{t("forecast.stable")}</span>
               </>
             )}
           </div>
@@ -283,15 +345,15 @@ function ForecastChart({ data, treasuryBalance }) {
       </CardHeader>
 
       <CardContent className="space-y-8">
-        {/* SECTION 2 — Premium KPI Cards */}
+        {/* Premium KPI Cards */}
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          {/* KPI 1: Solde actuel */}
+          {/* KPI 1: Current Balance */}
           <div className="group relative overflow-hidden rounded-xl bg-muted/30 p-4 ring-1 ring-border/50 transition-all hover:ring-primary/50 hover:shadow-lg hover:shadow-primary/5">
             <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
             <div className="relative space-y-3">
               <div className="flex items-center justify-between">
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-500/10">
-                  <Wallet className="h-4 w-4 text-blue-500" />
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500/10 to-blue-600/5 ring-1 ring-blue-500/20 shadow-sm">
+                  <Landmark className="h-4 w-4 text-blue-600" />
                 </div>
                 <div className="text-[10px] font-medium text-muted-foreground/60 uppercase tracking-wider">
                   {t("forecast.currentShort")}
@@ -308,13 +370,13 @@ function ForecastChart({ data, treasuryBalance }) {
             </div>
           </div>
 
-          {/* KPI 2: Solde projeté */}
+          {/* KPI 2: Projected Balance */}
           <div className="group relative overflow-hidden rounded-xl bg-muted/30 p-4 ring-1 ring-border/50 transition-all hover:ring-primary/50 hover:shadow-lg hover:shadow-primary/5">
             <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
             <div className="relative space-y-3">
               <div className="flex items-center justify-between">
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-purple-500/10">
-                  <Target className="h-4 w-4 text-purple-500" />
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500/10 to-purple-600/5 ring-1 ring-purple-500/20 shadow-sm">
+                  {trend === "up" ? <TrendingUp className="h-4 w-4 text-purple-600" /> : trend === "down" ? <TrendingDown className="h-4 w-4 text-purple-600" /> : <Activity className="h-4 w-4 text-purple-600" />}
                 </div>
                 <div className="text-[10px] font-medium text-muted-foreground/60 uppercase tracking-wider">
                   {t("forecast.projection")}
@@ -341,14 +403,12 @@ function ForecastChart({ data, treasuryBalance }) {
             <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
             <div className="relative space-y-3">
               <div className="flex items-center justify-between">
-                <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${
-                  kpis.variation >= 0 ? 'bg-emerald-500/10' : 'bg-red-500/10'
+                <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${
+                  kpis.variation >= 0 
+                    ? 'bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 ring-1 ring-emerald-500/20 shadow-sm' 
+                    : 'bg-gradient-to-br from-red-500/10 to-red-600/5 ring-1 ring-red-500/20 shadow-sm'
                 }`}>
-                  {kpis.variation >= 0 ? (
-                    <ArrowUpRight className="h-4 w-4 text-emerald-500" />
-                  ) : (
-                    <ArrowDownRight className="h-4 w-4 text-red-500" />
-                  )}
+                  <BarChart4 className={`h-4 w-4 ${kpis.variation >= 0 ? 'text-emerald-600' : 'text-red-600'}`} />
                 </div>
                 <div className="text-[10px] font-medium text-muted-foreground/60 uppercase tracking-wider">
                   Delta
@@ -374,8 +434,8 @@ function ForecastChart({ data, treasuryBalance }) {
             <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
             <div className="relative space-y-3">
               <div className="flex items-center justify-between">
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-cyan-500/10">
-                  <Clock className="h-4 w-4 text-cyan-500" />
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500/10 to-cyan-600/5 ring-1 ring-cyan-500/20 shadow-sm">
+                  <CalendarRange className="h-4 w-4 text-cyan-600" />
                 </div>
                 <div className="text-[10px] font-medium text-muted-foreground/60 uppercase tracking-wider">
                   Période
@@ -398,49 +458,51 @@ function ForecastChart({ data, treasuryBalance }) {
           </div>
         </div>
 
-        {/* SECTION 3 — Premium Chart */}
-        <div className="rounded-xl bg-muted/30 p-6 ring-1 ring-border/50">
-          {/* Légende élégante */}
-          <div className="flex items-center justify-end gap-6 mb-4 pb-3 border-b border-border/30">
-            <div className="flex items-center gap-2">
-              <div className="h-0.5 w-6 rounded-full" style={{ background: `linear-gradient(to right, ${trendColor}, ${trendColor})` }} />
+        {/* Premium Chart */}
+        <div className="rounded-2xl bg-muted/30 p-6 ring-1 ring-border/50 relative">
+          {/* Current Treasury Badge */}
+          <CurrentLevelBadge />
+          
+          {/* Elegant Legend with Badges */}
+          <div className="flex items-center justify-end gap-4 mb-5 pb-4 border-b border-border/30">
+            <Badge variant="outline" className="flex items-center gap-2 px-3 py-1 bg-transparent">
+              <div className="h-1.5 w-4 rounded-full" style={{ background: `linear-gradient(to right, ${trendColor}, ${trendColor})` }} />
               <span className="text-xs font-medium text-muted-foreground">{t("forecast.projection")}</span>
-            </div>
-            <div className="flex items-center gap-2">
+            </Badge>
+            <Badge variant="outline" className="flex items-center gap-2 px-3 py-1 bg-transparent">
               <div 
-                className="h-0.5 w-6 rounded-full"
+                className="h-1.5 w-4 rounded-full"
                 style={{ 
                   background: referenceLineColors.stroke,
                   backgroundImage: `repeating-linear-gradient(
                     to right,
                     ${referenceLineColors.stroke} 0,
-                    ${referenceLineColors.stroke} 4px,
-                    transparent 4px,
-                    transparent 8px
+                    ${referenceLineColors.stroke} 2px,
+                    transparent 2px,
+                    transparent 5px
                   )`
                 }}
               />
               <span className="text-xs font-medium text-muted-foreground">{t("forecast.currentLevel")}</span>
-            </div>
+            </Badge>
           </div>
           
           <ResponsiveContainer width="100%" height={420}>
             <AreaChart 
               data={chartData} 
-              margin={{ top: 20, right: 30, left: 10, bottom: 20 }}
+              margin={{ top: 30, right: 30, left: 10, bottom: 20 }}
             >
               <defs>
+                {/* Confidence band gradient - only surrounds the line */}
                 <linearGradient id="colorConfidence" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={trendColor} stopOpacity={0.25} />
-                  <stop offset="50%" stopColor={trendColor} stopOpacity={0.1} />
-                  <stop offset="95%" stopColor={trendColor} stopOpacity={0.02} />
+                  <stop offset="0%" stopColor={trendColor} stopOpacity={theme === 'dark' ? 0.1 : 0.07} />
+                  <stop offset="50%" stopColor={trendColor} stopOpacity={theme === 'dark' ? 0.05 : 0.03} />
+                  <stop offset="100%" stopColor={trendColor} stopOpacity={theme === 'dark' ? 0.015 : 0.01} />
                 </linearGradient>
-                <linearGradient id="colorLine" x1="0" y1="0" x2="1" y2="0">
-                  <stop offset="0%" stopColor={trendColor} stopOpacity={0.8} />
-                  <stop offset="100%" stopColor={trendColor} stopOpacity={1} />
-                </linearGradient>
+                
+                {/* Glow filter */}
                 <filter id="glow">
-                  <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+                  <feGaussianBlur stdDeviation="3.2" result="coloredBlur"/>
                   <feMerge>
                     <feMergeNode in="coloredBlur"/>
                     <feMergeNode in="SourceGraphic"/>
@@ -448,9 +510,10 @@ function ForecastChart({ data, treasuryBalance }) {
                 </filter>
               </defs>
               
+              {/* Ultra Subtle Grid */}
               <CartesianGrid 
                 strokeDasharray="0" 
-                stroke="hsl(var(--border) / 0.2)" 
+                stroke="hsl(var(--border) / 0.06)" 
                 strokeWidth={1}
                 vertical={false}
               />
@@ -458,23 +521,25 @@ function ForecastChart({ data, treasuryBalance }) {
               <XAxis
                 dataKey="ds"
                 tickFormatter={formatXAxis}
-                stroke="hsl(var(--muted-foreground) / 0.3)"
+                stroke="hsl(var(--muted-foreground) / 0.18)"
                 fontSize={11}
                 tickLine={false}
-                axisLine={{ stroke: 'hsl(var(--border) / 0.3)', strokeWidth: 1 }}
+                axisLine={{ stroke: 'hsl(var(--border) / 0.12)', strokeWidth: 1 }}
                 tick={{ fill: theme === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.7)' }}
                 dy={10}
+                tickMargin={8}
               />
               
               <YAxis
                 tickFormatter={(value) => formatMadCompact(value)}
-                stroke="hsl(var(--muted-foreground) / 0.3)"
+                stroke="hsl(var(--muted-foreground) / 0.18)"
                 fontSize={11}
                 tickLine={false}
-                axisLine={{ stroke: 'hsl(var(--border) / 0.3)', strokeWidth: 1 }}
+                axisLine={{ stroke: 'hsl(var(--border) / 0.12)', strokeWidth: 1 }}
                 tick={{ fill: theme === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.7)' }}
                 width={90}
                 dx={-5}
+                tickMargin={8}
               />
               
               <Tooltip 
@@ -482,63 +547,55 @@ function ForecastChart({ data, treasuryBalance }) {
                 cursor={{ 
                   stroke: trendColor, 
                   strokeWidth: 1,
-                  strokeDasharray: '5 5',
-                  opacity: 0.5
+                  strokeDasharray: '8 8',
+                  opacity: 0.25
                 }} 
               />
               
-              <ReferenceLine
-                y={treasuryBalance}
-                stroke={referenceLineColors.stroke}
-                strokeDasharray="8 4"
-                strokeWidth={1.5}
-                label={{
-                  position: "insideTopRight",
-                  value: t("forecast.currentLevel"),
-                  fill: referenceLineColors.labelFill,
-                  fontSize: 10,
-                  fontWeight: 600,
-                  offset: 10,
-                  opacity: 0.9
-                }}
-              />
-              
-              <Area
-                type="monotone"
-                dataKey="confidenceLow"
-                stroke="transparent"
-                fill="transparent"
-              />
-              
+              {/* Confidence Band - only surrounds the line */}
               <Area
                 type="monotone"
                 dataKey="confidenceHigh"
                 stroke="transparent"
+                fill="transparent"
+              />
+              <Area
+                type="monotone"
+                dataKey="confidenceLow"
+                stroke="transparent"
                 fill="url(#colorConfidence)"
               />
               
+              {/* Current Treasury Reference Line */}
+              <ReferenceLine
+                y={treasuryBalance}
+                stroke={referenceLineColors.stroke}
+                strokeDasharray="10 5"
+                strokeWidth={0.7}
+              />
+              
+              {/* Main Forecast Line */}
               <Line
                 type="monotone"
                 dataKey="projectedBalance"
-                stroke="url(#colorLine)"
-                strokeWidth={3}
+                stroke="var(--foreground)"
+                strokeWidth={3.5}
                 dot={false}
                 activeDot={{ 
-                  r: 6, 
-                  fill: trendColor, 
-                  strokeWidth: 3, 
-                  stroke: "hsl(var(--card))",
+                  r: 8, 
+                  fill: "var(--foreground)", 
+                  strokeWidth: 5, 
+                  stroke: "var(--card)",
                   filter: "url(#glow)"
                 }}
-                name={t("forecast.projectedBalance")}
-                animationDuration={1000}
+                animationDuration={1300}
                 animationEasing="ease-in-out"
               />
             </AreaChart>
           </ResponsiveContainer>
         </div>
         
-        {/* Footer info - subtil */}
+        {/* Footer info */}
         <div className="flex items-center justify-between text-[11px] text-muted-foreground/50">
           <div className="flex items-center gap-1.5">
             <div className="h-1.5 w-1.5 rounded-full bg-primary/50" />
@@ -549,6 +606,7 @@ function ForecastChart({ data, treasuryBalance }) {
             <span>{t("forecast.basedOnDays", { days: kpis.horizon })}</span>
           </div>
         </div>
+        
       </CardContent>
     </Card>
   );

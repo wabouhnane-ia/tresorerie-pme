@@ -1,15 +1,19 @@
 import { createContext, useCallback, useContext, useMemo, useState, useEffect } from "react";
 import { notificationService } from "@/services/notificationService";
+import { useAuth } from "@/hooks/useAuth";
 
 const NotificationShellContext = createContext(null);
 
 export function NotificationShellProvider({ children }) {
+  const { isAuth } = useAuth();
   const [openCenter, setOpenCenter] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [hasCritical, setHasCritical] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const refreshUnreadCount = useCallback(async () => {
+    if (!isAuth) return;
+    
     try {
       setLoading(true);
       const result = await notificationService.getUnreadNotifications();
@@ -20,22 +24,26 @@ export function NotificationShellProvider({ children }) {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isAuth]);
 
   const openNotificationCenter = useCallback(() => {
     setOpenCenter(true);
-    refreshUnreadCount();
-  }, [refreshUnreadCount]);
+    if (isAuth) {
+      refreshUnreadCount();
+    }
+  }, [isAuth, refreshUnreadCount]);
 
   const closeNotificationCenter = useCallback(() => {
     setOpenCenter(false);
   }, []);
 
   useEffect(() => {
+    if (!isAuth) return;
+
     refreshUnreadCount();
     const interval = setInterval(refreshUnreadCount, 30000);
     return () => clearInterval(interval);
-  }, [refreshUnreadCount]);
+  }, [isAuth, refreshUnreadCount]);
 
   const value = useMemo(
     () => ({

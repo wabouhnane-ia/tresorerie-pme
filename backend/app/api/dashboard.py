@@ -67,7 +67,10 @@ async def generate_report(
     company_id = ctx["company_id"]
     valid_languages = ["fr", "en", "ar"]
     if language not in valid_languages:
-        language = "fr"
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid language. Must be one of: {', '.join(valid_languages)}",
+        )
 
     try:
         context = await analytics_service.get_treasury_context(company_id)

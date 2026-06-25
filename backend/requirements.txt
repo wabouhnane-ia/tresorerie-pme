@@ -13,3 +13,5 @@ numpy
 scikit-learn
 holidays
 hijri-converter
+arabic-reshaper
+python-bidi
